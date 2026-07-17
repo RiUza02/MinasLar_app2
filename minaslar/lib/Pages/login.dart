@@ -5,7 +5,7 @@ import '../../core/design_system/design_system.dart';
 import '../../core/widgets/widgets.dart';
 import '../../core/errors/errors_handler.dart';
 import 'criarconta.dart';
-import 'a.dart';
+import 'homepage.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -43,12 +43,13 @@ class _LoginPageState extends State<LoginPage> {
       final nome = _nomeController.text.trim();
       final senha = _senhaController.text;
 
-      // Consulta RPC adaptada para buscar por Nome e Senha
+      // 1. Consulta RPC no banco de dados
       final List<dynamic> response = await Supabase.instance.client.rpc(
         'login_usuario',
         params: {'p_nome': nome, 'p_senha': senha},
       );
 
+      // Verifica se a tela ainda existe antes de continuar
       if (!mounted) return;
 
       if (response.isEmpty) {
@@ -57,17 +58,27 @@ class _LoginPageState extends State<LoginPage> {
 
       final dadosUsuario = response.first as Map<String, dynamic>;
 
-      // Regra de segurança: impede o login se não estiver autenticado pelo admin
       if (dadosUsuario['autenticado'] == false) {
         throw 'Sua conta ainda não foi liberada por um administrador.';
       }
 
-      // --- NOVO: SALVA O USUÁRIO DE FORMA CRIPTOGRAFADA NO CELULAR ---
+      // 2. Grava os dados da sessão localmente de forma criptografada
       await _storage.write(key: 'usuario_logado', value: dadosUsuario['nome']);
+      await _storage.write(
+        key: 'is_admin',
+        value: dadosUsuario['is_admin'].toString(),
+      );
 
+      // Garante que o contexto ainda está ativo antes de executar a navegação.
+      if (!mounted) return;
+
+      // 3. Limpa a pilha de telas e abre a aplicação principal
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
-          builder: (context) => TelaLogado(nomeUsuario: dadosUsuario['nome']),
+          builder: (context) => Overview(
+            nomeUsuario: dadosUsuario['nome'],
+            isAdmin: dadosUsuario['is_admin'],
+          ),
         ),
         (route) => false,
       );

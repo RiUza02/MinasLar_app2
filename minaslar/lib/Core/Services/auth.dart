@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import '../../core/design_system/design_system.dart';
-import '../../Pages/login.dart';
-import '../../Pages/homepage.dart';
+import '../../Pages/CadastroLogin/login.dart';
+import '../../Pages/HomePage/overview.dart';
 
 /// Tela de roteamento inicial que valida a sessão local e exige biometria/PIN.
 class AuthGatePage extends StatefulWidget {

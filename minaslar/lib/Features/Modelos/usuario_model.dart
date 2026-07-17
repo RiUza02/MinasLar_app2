@@ -52,7 +52,7 @@ class Usuario {
     return Usuario(
       id: map['id']?.toString(),
       nome: map['nome'] ?? '',
-      telefone: map['telefone'] ?? '',
+      telefone: map['telefone']?.toString() ?? '',
       isAdmin: map['is_admin'] ?? false,
       autenticado: map['autenticado'] ?? false,
       criadoEm: map['criado_em'] != null

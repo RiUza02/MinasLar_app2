@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../core/design_system/design_system.dart';
-import '../core/utils/formatters.dart';
-import '../core/errors/errors_handler.dart';
-import '../core/widgets/widgets.dart';
+import '../../core/design_system/design_system.dart';
+import '../../core/utils/formatters.dart';
+import '../../core/errors/errors_handler.dart';
+import '../../core/widgets/widgets.dart';
 
 /// Tela responsável pelo registro de novos usuários no aplicativo.
 ///

@@ -4,3 +4,4 @@ export 'dimensions.dart';
 export 'text_styles.dart';
 export 'theme.dart';
 export 'icons.dart';
+export 'package:flutter/material.dart';

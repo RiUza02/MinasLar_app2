@@ -1,11 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../../core/design_system/design_system.dart';
-import '../../core/widgets/widgets.dart';
-import '../../core/errors/errors_handler.dart';
-import 'criarconta.dart';
-import 'homepage.dart';
+import '../../../core/design_system/design_system.dart';
+import '../../../core/widgets/widgets.dart';
+import '../../../core/errors/errors_handler.dart';
+import 'criar_conta.dart';
+import '../HomePage/overview.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -63,6 +62,15 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       // 2. Grava os dados da sessão localmente de forma criptografada
+      // Garante que o ID e o telefone sejam salvos para a busca de sessão.
+      await _storage.write(
+        key: 'usuario_id',
+        value: dadosUsuario['id']?.toString(),
+      );
+      await _storage.write(
+        key: 'telefone',
+        value: dadosUsuario['telefone']?.toString(),
+      );
       await _storage.write(key: 'usuario_logado', value: dadosUsuario['nome']);
       await _storage.write(
         key: 'is_admin',

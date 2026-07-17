@@ -4,16 +4,10 @@ import '../Modelos/usuario_model.dart';
 class UsuarioRepository {
   final _supabase = Supabase.instance.client;
 
-  // ==================================================
-  // CACHE EM MEMÓRIA (Otimização para Alta Leitura)
-  // ==================================================
   static List<Usuario>? _cacheTecnicos;
   static DateTime? _ultimaConsultaCache;
-
-  /// Tempo de validade do cache (ex: 10 minutos).
   static const Duration _duracaoCache = Duration(minutes: 10);
 
-  /// Limpa o cache manualmente (chame isso sempre que salvar ou editar um técnico)
   void invalidarCache() {
     _cacheTecnicos = null;
     _ultimaConsultaCache = null;
@@ -35,6 +29,7 @@ class UsuarioRepository {
         .select()
         .order('nome', ascending: true);
 
+    // Mapeamento seguro convertendo explicitamente cada item
     final lista = (resposta as List<dynamic>)
         .map((map) => Usuario.fromMap(map as Map<String, dynamic>))
         .toList();
@@ -45,8 +40,7 @@ class UsuarioRepository {
     return lista;
   }
 
-  /// Busca um usuário específico pelo telefone limpo (Útil para checar a flag `autenticado` no Login).
-  /// Retorna [null] se o usuário não for encontrado.
+  /// Busca um usuário específico pelo telefone limpo.
   Future<Usuario?> buscarPorTelefone(String telefone) async {
     final telefoneLimpo = telefone.replaceAll(RegExp(r'[^0-9]'), '');
 
@@ -60,14 +54,13 @@ class UsuarioRepository {
           .maybeSingle();
 
       if (resposta == null) return null;
-      // CORREÇÃO: Removido o cast desnecessário 'as Map<String, dynamic>'
       return Usuario.fromMap(resposta);
     } catch (_) {
       return null;
     }
   }
 
-  /// Busca técnicos por Nome ou Telefone (com suporte a busca parcial na digitação).
+  /// Busca técnicos por Nome ou Telefone com suporte a cache local e busca remota resiliente.
   Future<List<Usuario>> buscarPorNomeOuTelefone(String termo) async {
     final termoLimpo = termo.trim();
 
@@ -88,10 +81,10 @@ class UsuarioRepository {
     }
 
     final termoNumerico = termoLimpo.replaceAll(RegExp(r'[^0-9]'), '');
-    String filtroOr = 'nome.ilike.%$termoLimpo%';
+    String filtroOr = "nome.ilike.%$termoLimpo%";
 
     if (termoNumerico.isNotEmpty) {
-      filtroOr += ',telefone.ilike.%$termoNumerico%';
+      filtroOr += ",telefone.ilike.%$termoNumerico%";
     }
 
     final resposta = await _supabase

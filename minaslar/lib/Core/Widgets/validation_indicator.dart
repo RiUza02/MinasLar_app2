@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import '../design_system/design_system.dart';
 
 /// Indicador visual de feedback imediato para critérios de validação em tempo real.

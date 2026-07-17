@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import '../core/design_system/design_system.dart';
+import '../../core/design_system/design_system.dart';
+import '../Utils/settings_page.dart';
 
 // ============================================================================
 // REGISTRO DE MIGRAÇÃO DE TELAS (DIRETÓRIO: 'Rascunho' -> Design System)
@@ -12,6 +12,7 @@ import '../core/design_system/design_system.dart';
 // [ ] Home       (Administrador / Usuário Comum)
 // [ ] Clientes   (Administrador / Usuário Comum)
 // [ ] Orçamentos (Administrador / Usuário Comum)
+// [X] Configurações (Adicionado)
 // ============================================================================
 
 /// Tela principal de navegação (Shell) pós-login.
@@ -112,39 +113,30 @@ class _OverviewState extends State<Overview> {
 
   /// Gera uma interface visual temporária para telas ainda não implementadas.
   Widget _placeholder(String label) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(label),
-        backgroundColor: widget.isAdmin ? AppColors.error : AppColors.primary,
-        foregroundColor: AppColors.textPrimary,
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppDimensions.spaceLarge),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.construction_outlined,
-                size: 64,
-                color: AppColors.textDisabled,
-              ),
-              const SizedBox(height: AppDimensions.spaceLarge),
-              Text(
-                'Tela em Construção',
-                style: AppTextStyles.titleLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppDimensions.spaceSmall),
-              Text(
-                'A funcionalidade de "$label" estará disponível em breve.',
-                style: AppTextStyles.bodyMediumSecondary,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimensions.spaceLarge),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.construction_outlined,
+              size: 64,
+              color: AppColors.textDisabled,
+            ),
+            const SizedBox(height: AppDimensions.spaceLarge),
+            Text(
+              'Tela em Construção',
+              style: AppTextStyles.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppDimensions.spaceSmall),
+            Text(
+              'A funcionalidade de "$label" estará disponível em breve.',
+              style: AppTextStyles.bodyMediumSecondary,
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
@@ -154,10 +146,33 @@ class _OverviewState extends State<Overview> {
   Widget build(BuildContext context) {
     // Define a cor de fundo da barra de navegação pelo perfil do usuário
     final Color navBarColor = widget.isAdmin
-        ? AppColors.error
+        ? AppColors.primaryAlternative
         : AppColors.primary;
+    final String currentPageTitle = _navBarItems[_selectedIndex].label!;
 
     return Scaffold(
+      appBar: AppBar(
+        title: Text(currentPageTitle),
+        backgroundColor: navBarColor,
+        foregroundColor: AppColors.textPrimary,
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+        actions: [
+          // Ícone de engrenagem redirecionando para as Configurações
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Configurações',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SettingsPage(isAdmin: widget.isAdmin),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: PageView(
         controller: _pageController,
         onPageChanged: _onPageChanged,

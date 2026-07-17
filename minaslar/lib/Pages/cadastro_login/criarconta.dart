@@ -174,8 +174,9 @@ class _CriarContaPageState extends State<CriarContaPage> {
                                 ),
                                 validator: (v) {
                                   if (v!.isEmpty) return 'Informe o telefone';
-                                  if (v.length < 15)
+                                  if (v.length < 15) {
                                     return 'Telefone incompleto';
+                                  }
                                   return null;
                                 },
                               ),

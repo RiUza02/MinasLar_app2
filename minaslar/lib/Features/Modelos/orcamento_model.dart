@@ -24,9 +24,6 @@ class Orcamento {
   /// ID do cliente relacionado ao orçamento (chave estrangeira indexada).
   final String clienteId;
 
-  /// ID do usuário/técnico que criou ou é responsável pelo orçamento.
-  final String? clienteId;
-
   /// Título do serviço (Ex: "Formatação PC", "Troca de Tela").
   final String titulo;
 
@@ -65,7 +62,6 @@ class Orcamento {
     required this.dataPega,
     this.horarioDoDia = Turno.tarde,
     this.id,
-    this.clienteId,
     this.descricao,
     this.dataEntrega,
     this.valor,
@@ -82,8 +78,7 @@ class Orcamento {
   Map<String, dynamic> toMap() {
     return {
       if (id != null) 'id': id,
-      'cliente_id': clienteId,
-      if (clienteId != null) 'user_id': clienteId,
+      'user_id': clienteId,
       'titulo': titulo.trim(),
       'descricao': descricao?.trim(),
       'data_pega': dataPega.toIso8601String(),
@@ -102,7 +97,6 @@ class Orcamento {
     return Orcamento(
       id: map['id']?.toString(),
       clienteId: map['cliente_id']?.toString() ?? '',
-      clienteId: map['user_id']?.toString(),
       titulo: map['titulo'] ?? 'Sem Título',
       descricao: map['descricao'],
 
@@ -134,7 +128,6 @@ class Orcamento {
   Orcamento copyWith({
     String? id,
     String? clienteId,
-    String? clienteId,
     String? titulo,
     String? descricao,
     DateTime? dataPega,
@@ -148,7 +141,6 @@ class Orcamento {
   }) {
     return Orcamento(
       id: id ?? this.id,
-      clienteId: clienteId ?? this.clienteId,
       clienteId: clienteId ?? this.clienteId,
       titulo: titulo ?? this.titulo,
       descricao: descricao ?? this.descricao,

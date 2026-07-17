@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/design_system/design_system.dart';
-import 'cadastro_login/criarconta.dart';
-import 'cadastro_login/login.dart';
+import 'criarconta.dart';
+import '../core/services/auth.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -56,7 +56,7 @@ class HomePage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const LoginPage(),
+                        builder: (context) => const AuthGatePage(),
                       ),
                     );
                   },

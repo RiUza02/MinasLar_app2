@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'Login.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'telainicial.dart';
 
 class TelaLogado extends StatelessWidget {
   final String nomeUsuario;
@@ -62,9 +63,17 @@ class TelaLogado extends StatelessWidget {
                   side: BorderSide(color: tema.colorScheme.error),
                   foregroundColor: tema.colorScheme.error,
                 ),
-                onPressed: () {
+                onPressed: () async {
+                  // Limpa a sessão do usuário salva no dispositivo
+                  await const FlutterSecureStorage().delete(
+                    key: 'usuario_logado',
+                  );
+
+                  if (!context.mounted) return;
+
+                  // Volta para a tela inicial, limpando o histórico de navegação
                   Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => const LoginPage()),
+                    MaterialPageRoute(builder: (context) => const HomePage()),
                     (route) => false,
                   );
                 },

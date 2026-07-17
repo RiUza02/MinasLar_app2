@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../core/design_system/design_system.dart';
-import '../../core/utils/formatters.dart';
-import '../../core/widgets/widgets.dart';
+import '../core/design_system/design_system.dart';
+import '../core/utils/formatters.dart';
+import '../core/errors/errors_handler.dart';
+import '../core/widgets/widgets.dart';
 
 /// Tela responsável pelo registro de novos usuários no aplicativo.
 ///
@@ -84,11 +85,9 @@ class _CriarContaPageState extends State<CriarContaPage> {
       }
     } catch (e) {
       if (mounted) {
+        final mensagemErro = ErrorHandler.mapearErro(e);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Erro ao cadastrar: $e"),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(mensagemErro), backgroundColor: Colors.red),
         );
       }
     } finally {

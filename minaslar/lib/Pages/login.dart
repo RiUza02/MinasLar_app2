@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../core/design_system/design_system.dart';
 import '../../core/widgets/widgets.dart';
+import '../../core/errors/errors_handler.dart';
 import 'criarconta.dart';
 import 'a.dart';
 
@@ -17,6 +19,7 @@ class _LoginPageState extends State<LoginPage> {
   final _nomeController = TextEditingController();
   final _senhaController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final _storage = const FlutterSecureStorage();
 
   // --- ESTADOS DE CONTROLE DA INTERFACE ---
   bool _isLoading = false;
@@ -59,6 +62,9 @@ class _LoginPageState extends State<LoginPage> {
         throw 'Sua conta ainda não foi liberada por um administrador.';
       }
 
+      // --- NOVO: SALVA O USUÁRIO DE FORMA CRIPTOGRAFADA NO CELULAR ---
+      await _storage.write(key: 'usuario_logado', value: dadosUsuario['nome']);
+
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => TelaLogado(nomeUsuario: dadosUsuario['nome']),
@@ -66,7 +72,8 @@ class _LoginPageState extends State<LoginPage> {
         (route) => false,
       );
     } catch (e) {
-      _mostrarErro(e.toString().replaceAll('Exception: ', ''));
+      final mensagemErro = ErrorHandler.mapearErro(e);
+      _mostrarErro(mensagemErro);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../modelos/cliente_model.dart';
+import '../Modelos/cliente_model.dart';
 
 class ClienteRepository {
   final _supabase = Supabase.instance.client;

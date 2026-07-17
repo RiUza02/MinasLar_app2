@@ -13,6 +13,9 @@ class Usuario {
   /// Define se o usuário possui permissões administrativas na loja.
   final bool isAdmin;
 
+  /// Define se o usuário está liberado para acessar e utilizar o sistema.
+  final bool autenticado;
+
   /// Data de cadastro no sistema.
   final DateTime? criadoEm;
 
@@ -25,6 +28,7 @@ class Usuario {
     required this.nome,
     required this.telefone,
     this.isAdmin = false,
+    this.autenticado = false, // Padrão bloqueado até que se aprove
     this.criadoEm,
     this.atualizadoEm,
   });
@@ -39,6 +43,7 @@ class Usuario {
       'nome': nome.trim(),
       'telefone': telefone.replaceAll(RegExp(r'[^0-9]'), ''),
       'is_admin': isAdmin,
+      'autenticado': autenticado,
       'atualizado_em': DateTime.now().toIso8601String(),
     };
   }
@@ -49,6 +54,7 @@ class Usuario {
       nome: map['nome'] ?? '',
       telefone: map['telefone'] ?? '',
       isAdmin: map['is_admin'] ?? false,
+      autenticado: map['autenticado'] ?? false,
       criadoEm: map['criado_em'] != null
           ? DateTime.tryParse(map['criado_em'].toString())
           : null,
@@ -67,6 +73,7 @@ class Usuario {
     String? nome,
     String? telefone,
     bool? isAdmin,
+    bool? autenticado,
     DateTime? criadoEm,
     DateTime? atualizadoEm,
   }) {
@@ -75,6 +82,7 @@ class Usuario {
       nome: nome ?? this.nome,
       telefone: telefone ?? this.telefone,
       isAdmin: isAdmin ?? this.isAdmin,
+      autenticado: autenticado ?? this.autenticado,
       criadoEm: criadoEm ?? this.criadoEm,
       atualizadoEm: atualizadoEm ?? this.atualizadoEm,
     );
@@ -90,6 +98,7 @@ class Usuario {
         other.nome == nome &&
         other.telefone == telefone &&
         other.isAdmin == isAdmin &&
+        other.autenticado == autenticado &&
         other.criadoEm == criadoEm &&
         other.atualizadoEm == atualizadoEm;
   }
@@ -97,12 +106,20 @@ class Usuario {
   /// Sobrescreve o gerador de Hash do objeto.
   @override
   int get hashCode {
-    return Object.hash(id, nome, telefone, isAdmin, criadoEm, atualizadoEm);
+    return Object.hash(
+      id,
+      nome,
+      telefone,
+      isAdmin,
+      autenticado,
+      criadoEm,
+      atualizadoEm,
+    );
   }
 
   /// Retorna uma representação em texto limpa do objeto.
   @override
   String toString() {
-    return 'Usuario(id: $id, nome: $nome, telefone: $telefone, isAdmin: $isAdmin)';
+    return 'Usuario(id: $id, nome: $nome, telefone: $telefone, isAdmin: $isAdmin, autenticado: $autenticado)';
   }
 }

@@ -25,7 +25,7 @@ class Orcamento {
   final String clienteId;
 
   /// ID do usuário/técnico que criou ou é responsável pelo orçamento.
-  final String? userId;
+  final String? clienteId;
 
   /// Título do serviço (Ex: "Formatação PC", "Troca de Tela").
   final String titulo;
@@ -65,7 +65,7 @@ class Orcamento {
     required this.dataPega,
     this.horarioDoDia = Turno.tarde,
     this.id,
-    this.userId,
+    this.clienteId,
     this.descricao,
     this.dataEntrega,
     this.valor,
@@ -83,7 +83,7 @@ class Orcamento {
     return {
       if (id != null) 'id': id,
       'cliente_id': clienteId,
-      if (userId != null) 'user_id': userId,
+      if (clienteId != null) 'user_id': clienteId,
       'titulo': titulo.trim(),
       'descricao': descricao?.trim(),
       'data_pega': dataPega.toIso8601String(),
@@ -102,7 +102,7 @@ class Orcamento {
     return Orcamento(
       id: map['id']?.toString(),
       clienteId: map['cliente_id']?.toString() ?? '',
-      userId: map['user_id']?.toString(),
+      clienteId: map['user_id']?.toString(),
       titulo: map['titulo'] ?? 'Sem Título',
       descricao: map['descricao'],
 
@@ -134,7 +134,7 @@ class Orcamento {
   Orcamento copyWith({
     String? id,
     String? clienteId,
-    String? userId,
+    String? clienteId,
     String? titulo,
     String? descricao,
     DateTime? dataPega,
@@ -149,7 +149,7 @@ class Orcamento {
     return Orcamento(
       id: id ?? this.id,
       clienteId: clienteId ?? this.clienteId,
-      userId: userId ?? this.userId,
+      clienteId: clienteId ?? this.clienteId,
       titulo: titulo ?? this.titulo,
       descricao: descricao ?? this.descricao,
       dataPega: dataPega ?? this.dataPega,
@@ -170,7 +170,7 @@ class Orcamento {
     return other is Orcamento &&
         other.id == id &&
         other.clienteId == clienteId &&
-        other.userId == userId &&
+        other.clienteId == clienteId &&
         other.titulo == titulo &&
         other.descricao == descricao &&
         other.dataPega == dataPega &&
@@ -187,7 +187,7 @@ class Orcamento {
   int get hashCode {
     // Agrupamento seguro em Object.hash para evitar o limite antigo de argumentos
     return Object.hash(
-      Object.hash(id, clienteId, userId, titulo, descricao, dataPega),
+      Object.hash(id, clienteId, clienteId, titulo, descricao, dataPega),
       Object.hash(
         dataEntrega,
         valor,

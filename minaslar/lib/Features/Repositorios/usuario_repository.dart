@@ -11,7 +11,6 @@ class UsuarioRepository {
   static DateTime? _ultimaConsultaCache;
 
   /// Tempo de validade do cache (ex: 10 minutos).
-  /// Como funcionários raramente mudam, isso evita 99% dos requests HTTP da sua loja.
   static const Duration _duracaoCache = Duration(minutes: 10);
 
   /// Limpa o cache manualmente (chame isso sempre que salvar ou editar um técnico)
@@ -21,11 +20,9 @@ class UsuarioRepository {
   }
 
   /// Busca todos os técnicos para listagens gerais (com Cache em RAM).
-  /// Correção: O parâmetro 'forcarAtualizacao' agora está sem o caractere especial 'ç'.
   Future<List<Usuario>> listarTodos({bool forcarAtualizacao = false}) async {
     final agora = DateTime.now();
 
-    // 1. Se o cache for válido e não forçamos atualização, retorna da memória em 0ms
     if (!forcarAtualizacao &&
         _cacheTecnicos != null &&
         _ultimaConsultaCache != null &&
@@ -33,7 +30,6 @@ class UsuarioRepository {
       return _cacheTecnicos!;
     }
 
-    // 2. Se não tem cache, busca do Supabase com ordenação alfabética
     final resposta = await _supabase
         .from('usuarios')
         .select()
@@ -43,23 +39,42 @@ class UsuarioRepository {
         .map((map) => Usuario.fromMap(map as Map<String, dynamic>))
         .toList();
 
-    // 3. Salva na RAM e carimba o horário
     _cacheTecnicos = lista;
     _ultimaConsultaCache = agora;
 
     return lista;
   }
 
+  /// Busca um usuário específico pelo telefone limpo (Útil para checar a flag `autenticado` no Login).
+  /// Retorna [null] se o usuário não for encontrado.
+  Future<Usuario?> buscarPorTelefone(String telefone) async {
+    final telefoneLimpo = telefone.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (telefoneLimpo.isEmpty) return null;
+
+    try {
+      final resposta = await _supabase
+          .from('usuarios')
+          .select()
+          .eq('telefone', telefoneLimpo)
+          .maybeSingle();
+
+      if (resposta == null) return null;
+      // CORREÇÃO: Removido o cast desnecessário 'as Map<String, dynamic>'
+      return Usuario.fromMap(resposta);
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Busca técnicos por Nome ou Telefone (com suporte a busca parcial na digitação).
   Future<List<Usuario>> buscarPorNomeOuTelefone(String termo) async {
     final termoLimpo = termo.trim();
 
-    // Se a busca estiver vazia, usa o cache local para listar todos!
     if (termoLimpo.isEmpty) {
       return listarTodos();
     }
 
-    // Se o cache já existe na RAM, podemos filtrar LOCALMENTE sem gastar requisição!
     if (_cacheTecnicos != null) {
       final termoMinusculo = termoLimpo.toLowerCase();
       final termoNumerico = termoLimpo.replaceAll(RegExp(r'[^0-9]'), '');
@@ -72,7 +87,6 @@ class UsuarioRepository {
       }).toList();
     }
 
-    // Se não há cache, vai ao Supabase usando os índices GIN de Trigramas do SQL
     final termoNumerico = termoLimpo.replaceAll(RegExp(r'[^0-9]'), '');
     String filtroOr = 'nome.ilike.%$termoLimpo%';
 
@@ -95,9 +109,6 @@ class UsuarioRepository {
   /// Salva ou atualiza um técnico e limpa o cache da RAM automaticamente.
   Future<void> salvarUsuario(Usuario usuario) async {
     await _supabase.from('usuarios').upsert(usuario.toMap());
-
-    // Essencial: ao modificar um dado raro, destruímos o cache da memória
-    // para que a próxima leitura traga a versão nova do Supabase.
     invalidarCache();
   }
 }

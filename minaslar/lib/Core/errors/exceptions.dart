@@ -28,3 +28,10 @@ class UnknownException extends AppException {
     super.message = 'Ocorreu um erro inesperado. Tente novamente.',
   ]);
 }
+
+/// [Uso]: Disparado quando a sessão do usuário no app não corresponde a nenhum usuário no banco.
+class SessionDivergenceException extends AppException {
+  const SessionDivergenceException([
+    super.message = 'Sessão divergente ou expirada. Faça login novamente.',
+  ]);
+}

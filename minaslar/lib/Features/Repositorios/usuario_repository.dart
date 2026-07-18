@@ -27,7 +27,7 @@ class UsuarioRepository {
     final resposta = await _supabase
         .from('usuarios')
         .select()
-        .order('nome', ascending: true);
+        .order('is_admin', ascending: true);
 
     // Mapeamento seguro convertendo explicitamente cada item
     final lista = (resposta as List<dynamic>)

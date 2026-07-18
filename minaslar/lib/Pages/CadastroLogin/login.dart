@@ -1,8 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../../../core/design_system/design_system.dart';
+import '../../../core/Design/design_system.dart';
 import '../../../core/widgets/widgets.dart';
-import '../../../core/errors/errors_handler.dart';
+import '../../../core/errors/errors.dart';
 import 'criar_conta.dart';
 import '../HomePage/overview.dart';
 
@@ -134,7 +134,7 @@ class _LoginPageState extends State<LoginPage> {
                           Align(
                             alignment: Alignment.centerLeft,
                             child: IconButton(
-                              icon: const Icon(Icons.arrow_back),
+                              icon: const Icon(AppIcons.voltar),
                               onPressed: () => Navigator.of(context).pop(),
                               color: AppColors.textPrimary,
                               padding: const EdgeInsets.only(

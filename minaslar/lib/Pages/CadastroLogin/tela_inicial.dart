@@ -1,4 +1,4 @@
-import '../../core/design_system/design_system.dart';
+import '../../../core/Design/design_system.dart';
 import 'criar_conta.dart';
 import '../../core/services/auth.dart';
 

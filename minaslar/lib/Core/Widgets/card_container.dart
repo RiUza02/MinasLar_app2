@@ -1,9 +1,9 @@
-import '../design_system/design_system.dart';
+import '../Design/design_system.dart';
 
 /// Container card com cabeçalho (ícone + título), bordas e espaçamentos padronizados.
-/// [Onde usar]: Ideal para agrupar blocos de informação correlacionadas em formulários,
-/// telas de configurações, detalhes do usuário ou dashboards.
-/// Exemplos: Card de "Dados Pessoais", Card de "Endereço de Entrega", Card de "Segurança".
+///
+/// **[Onde usar]**: Ideal para agrupar blocos de informações correlacionadas.
+/// Exemplos: Card de "Dados Pessoais", Card de "Segurança" ou seções de formulários.
 class AppCardContainer extends StatelessWidget {
   /// Título em destaque no topo da seção do card (ex: "DADOS PESSOAIS").
   final String titulo;
@@ -25,6 +25,7 @@ class AppCardContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppDimensions.spaceLarge),
+      // Estrutura visual baseada nos tokens do Design System
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
@@ -33,7 +34,7 @@ class AppCardContainer extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Cabeçalho padrão do card
+          // Cabeçalho padronizado (Ícone + Título)
           Row(
             children: [
               Icon(
@@ -46,7 +47,7 @@ class AppCardContainer extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppDimensions.spaceLarge),
-          // Corpo do card contendo os widgets filhos
+          // Injeção da lista de elementos internos do card
           ...children,
         ],
       ),

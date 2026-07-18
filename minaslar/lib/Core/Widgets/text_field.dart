@@ -1,45 +1,45 @@
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
-import '../design_system/design_system.dart';
+import '../Design/design_system.dart';
 
-/// Campo de entrada de dados (Input) padronizado para o projeto.
-/// [Onde usar]: Deve ser utilizado em absolutamente todos os formulários do app
-/// (Login, Cadastro, Recuperação de Senha, Edição de Endereço, etc.) em substituição
-/// ao [TextFormField] ou [TextField] nativos do Flutter.
+/// Campo de entrada de dados (Input) padronizado e estilizado para o ecossistema do aplicativo.
+///
+/// **[Onde usar]**: Em absolutamente todos os formulários do app (Login, Cadastro, Configurações, etc.),
+/// substituindo de forma mandatória o [TextFormField] ou [TextField] nativos do Flutter.
 class AppTextField extends StatelessWidget {
-  /// Controlador do texto digitado pelo usuário.
+  /// Controlador responsável pela captura e gerenciamento do texto digitado.
   final TextEditingController controller;
 
-  /// Rótulo superior do campo (ex: "E-mail", "Senha", "CPF").
+  /// Texto descritivo exibido como rótulo do campo (ex: "E-mail", "Senha").
   final String label;
 
-  /// Ícone fixo exibido à esquerda do campo para identificação rápida.
+  /// Ícone de identificação visual posicionado no início do campo.
   final IconData icon;
 
-  /// Define se o texto deve ser ocultado. Usado para campos de senhas ou tokens (padrão: `false`).
+  /// Oculta os caracteres digitados. Ideal para mascarar senhas.
   final bool obscureText;
 
-  /// Tipo de teclado exibido no dispositivo (numérico, e-mail, telefone, texto normal).
+  /// Configura a variante do teclado nativo do dispositivo (ex: numérico, e-mail).
   final TextInputType keyboardType;
 
-  /// Lista de máscaras de formatação (geralmente vindas da classe [AppFormatters]).
+  /// Lista de máscaras de formatação visual (ex: máscaras de CPF ou Telefone).
   final List<MaskTextInputFormatter>? inputFormatters;
 
-  /// Função executada ao submeter o formulário para checar se o dado é válido.
+  /// Bloco de lógica para validação de erros (regras de campos obrigatórios, formatos, etc.).
   final String? Function(String?)? validator;
 
-  /// Callback disparado a cada caractere digitado ou alterado pelo usuário.
+  /// Evento disparado imediatamente a cada modificação do texto no input.
   final void Function(String)? onChanged;
 
-  /// Widget opcional à direita (muito usado para o botão de "mostrar/ocultar senha").
+  /// Elemento interativo opcional posicionado no final do campo (ex: botão de alternar visibilidade da senha).
   final Widget? suffixIcon;
 
-  /// Texto de exemplo/dica exibido em cinza quando o campo está vazio (ex: "(00) 00000-0000").
+  /// Texto de dica ou exemplo exibido enquanto o campo estiver vazio (ex: "000.000.000-00").
   final String? hintText;
 
-  /// Ação do botão de confirmação do teclado (ex: "next", "done").
+  /// Define o comportamento do botão de ação do teclado virtual (ex: Avançar, Concluir).
   final TextInputAction? textInputAction;
 
-  /// Callback disparado quando o usuário submete o campo (pressiona "done" no teclado).
+  /// Evento executado no momento em que o usuário confirma a ação final no teclado.
   final void Function(String)? onFieldSubmitted;
 
   const AppTextField({
@@ -69,14 +69,14 @@ class AppTextField extends StatelessWidget {
       validator: validator,
       textInputAction: textInputAction,
       onFieldSubmitted: onFieldSubmitted,
-      style: AppTextStyles.bodyMedium, // Texto principal digitado pelo usuário
+      // Aplica a tipografia padrão para os dados inseridos pelo usuário
+      style: AppTextStyles.bodyMedium,
       decoration: InputDecoration(
         labelText: label,
-        // Consome o estilo discreto do Design System
         labelStyle: AppTextStyles.inputLabel,
         hintText: hintText,
-        // Consome o estilo de ajuda/transparente do Design System
         hintStyle: AppTextStyles.inputHint,
+        // Ícone inicial com a identidade visual primária do projeto
         prefixIcon: Icon(
           icon,
           color: AppColors.primary,

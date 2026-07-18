@@ -1,10 +1,10 @@
-import '../../core/design_system/design_system.dart';
-import '../Utils/settings_page.dart';
+import '../../../core/Design/design_system.dart';
+import '../Settings/settings_page.dart';
 
 // ============================================================================
 // REGISTRO DE MIGRAÇÃO DE TELAS (DIRETÓRIO: 'Rascunho' -> Design System)
 // ============================================================================
-// Status atual: 0/6 telas migradas. Todas estão operando via _placeholder.
+// Status atual: 1/7 telas migradas. Todas estão operando via _placeholder.
 //
 // [ ] Dashboard  (Exclusivo Administrador)
 // [ ] Agenda     (Administrador / Usuário Comum)
@@ -46,39 +46,39 @@ class _OverviewState extends State<Overview> {
       _selectedIndex = 3; // Inicia na tela "Home"
       _navBarItems = const [
         BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard),
+          icon: Icon(AppIcons.dashboard),
           label: 'Dashboard',
         ),
+        BottomNavigationBarItem(icon: Icon(AppIcons.agenda), label: 'Agenda'),
         BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month),
-          label: 'Agenda',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.assistant),
+          icon: Icon(AppIcons.assistente),
           label: 'Assistente',
         ),
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Clientes'),
+        BottomNavigationBarItem(icon: Icon(AppIcons.home), label: 'Home'),
         BottomNavigationBarItem(
-          icon: Icon(Icons.monetization_on),
+          icon: Icon(AppIcons.clientes),
+          label: 'Clientes',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(AppIcons.orcamentos),
           label: 'Orçamentos',
         ),
       ];
     } else {
       _selectedIndex = 2; // Inicia na tela "Home"
       _navBarItems = const [
+        BottomNavigationBarItem(icon: Icon(AppIcons.agenda), label: 'Agenda'),
         BottomNavigationBarItem(
-          icon: Icon(Icons.calendar_month),
-          label: 'Agenda',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.assistant),
+          icon: Icon(AppIcons.assistente),
           label: 'Assistente',
         ),
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Clientes'),
+        BottomNavigationBarItem(icon: Icon(AppIcons.home), label: 'Home'),
         BottomNavigationBarItem(
-          icon: Icon(Icons.monetization_on),
+          icon: Icon(AppIcons.clientes),
+          label: 'Clientes',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(AppIcons.orcamentos),
           label: 'Orçamentos',
         ),
       ];
@@ -120,7 +120,7 @@ class _OverviewState extends State<Overview> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(
-              Icons.construction_outlined,
+              AppIcons.emConstrucao,
               size: 64,
               color: AppColors.textDisabled,
             ),
@@ -160,7 +160,7 @@ class _OverviewState extends State<Overview> {
         actions: [
           // Ícone de engrenagem redirecionando para as Configurações
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: const Icon(AppIcons.settings),
             tooltip: 'Configurações',
             onPressed: () {
               Navigator.push(

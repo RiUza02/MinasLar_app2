@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../core/design_system/design_system.dart';
+import '../../../core/Design/design_system.dart';
 import '../../core/utils/formatters.dart';
-import '../../core/errors/errors_handler.dart';
+import '../../core/errors/errors.dart';
 import '../../core/widgets/widgets.dart';
 
 /// Tela responsável pelo registro de novos usuários no aplicativo.
@@ -119,7 +119,7 @@ class _CriarContaPageState extends State<CriarContaPage> {
                           Align(
                             alignment: Alignment.centerLeft,
                             child: IconButton(
-                              icon: const Icon(Icons.arrow_back),
+                              icon: const Icon(AppIcons.voltar),
                               onPressed: () => Navigator.of(context).pop(),
                               color: AppColors.textPrimary,
                               padding: const EdgeInsets.only(

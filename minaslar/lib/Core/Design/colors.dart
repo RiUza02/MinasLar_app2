@@ -8,6 +8,9 @@ class AppColors {
   /// [Uso]: Cor de destaque principal. Usada no fundo dos botões de ação,
   static const Color primary = Colors.blue;
 
+  /// [Uso]: Cor de destaque para administradores. Usada em botões e elementos de destaque.
+  static const Color adminColor = Colors.amber;
+
   /// [Uso]: Cor de destaque principal alternativa. Usada para adminstradores.
   static const Color primaryAlternative = Color(0xFFD32F2F);
 

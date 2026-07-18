@@ -2,11 +2,15 @@ import 'dart:io';
 import '../../Core/Design/design_system.dart';
 import '../../Core/Errors/errors.dart';
 import '../../Core/Services/auth.dart';
-import '../../Core/Utils/formatters.dart';
 import '../../Core/Widgets/widgets.dart';
 import '../../Features/Modelos/usuario_model.dart';
 import '../../Core/Services/settings_functions.dart';
+import 'change_informations.dart';
 import 'user_confirmation.dart';
+import '../../Core/Widgets/Settings/pending_users_button.dart';
+import '../../Core/Widgets/Settings/profile_info_card.dart';
+import '../../Core/Widgets/Settings/settings_app_bar.dart';
+import '../../Core/Widgets/Settings/users_list_view.dart';
 
 /// [uso] Centraliza as configurações do perfil do usuário logado e a gestão
 /// da equipe de funcionários.
@@ -37,21 +41,10 @@ class _SettingsPageState extends State<SettingsPage> {
   List<Usuario> _pendingUsers = [];
   List<Usuario> _authenticatedUsers = [];
 
-  /// Controladores de entrada de texto do formulário de perfil.
-  final _nomeController = TextEditingController();
-  final _telefoneController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
     _loadData(forceRefresh: false);
-  }
-
-  @override
-  void dispose() {
-    _nomeController.dispose();
-    _telefoneController.dispose();
-    super.dispose();
   }
 
   /// Busca os dados da equipe e sincroniza o estado do usuário atual.
@@ -75,15 +68,16 @@ class _SettingsPageState extends State<SettingsPage> {
           _pendingUsers = data.pendingUsers;
           _authenticatedUsers = data.authenticatedUsers;
           _isNetworkError = false;
-
-          _nomeController.text = data.currentUser.nome;
-          _telefoneController.text = AppFormatters.telefone.maskText(
-            data.currentUser.telefone,
-          );
         });
       }
     } on SessionDivergenceException catch (e) {
-      _showErrorSnackBar(ErrorHandler.mapearErro(e));
+      if (mounted) {
+        AppFeedback.show(
+          context,
+          ErrorHandler.mapearErro(e),
+          type: FeedbackType.error,
+        );
+      }
       await _logout();
     } on NetworkException catch (e) {
       if (mounted) {
@@ -91,7 +85,7 @@ class _SettingsPageState extends State<SettingsPage> {
           _isNetworkError = true;
           _errorMessage = ErrorHandler.mapearErro(e);
         });
-        _showErrorSnackBar(_errorMessage);
+        AppFeedback.show(context, _errorMessage, type: FeedbackType.error);
       }
     } on SocketException catch (e) {
       if (mounted) {
@@ -99,7 +93,7 @@ class _SettingsPageState extends State<SettingsPage> {
           _isNetworkError = true;
           _errorMessage = ErrorHandler.mapearErro(e);
         });
-        _showErrorSnackBar(_errorMessage);
+        AppFeedback.show(context, _errorMessage, type: FeedbackType.error);
       }
     } catch (e) {
       if (mounted) {
@@ -107,7 +101,11 @@ class _SettingsPageState extends State<SettingsPage> {
           _isNetworkError = false;
           _errorMessage = ErrorHandler.mapearErro(e);
         });
-        _showErrorSnackBar(_errorMessage);
+        AppFeedback.show(
+          context,
+          ErrorHandler.mapearErro(e),
+          type: FeedbackType.error,
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -115,35 +113,122 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   /// Salva as alterações de nome e telefone do usuário atual se houver modificações.
-  Future<void> _saveProfile() async {
+  Future<void> _saveProfile({
+    required String newName,
+    required String newPhone,
+  }) async {
     if (_currentUser == null) return;
     FocusScope.of(context).unfocus();
 
-    final nome = _nomeController.text.trim();
-    final telefone = AppFormatters.telefone.unmaskText(
-      _telefoneController.text,
-    );
-
-    if (nome == _currentUser!.nome && telefone == _currentUser!.telefone) {
-      _showInfoSnackBar("Nenhuma alteração foi feita.");
+    if (newName == _currentUser!.nome && newPhone == _currentUser!.telefone) {
+      if (mounted) {
+        AppFeedback.show(context, "Nenhuma alteração foi feita.");
+      }
       return;
     }
 
     setState(() => _isLoading = true);
-
     try {
       final updatedUser = await _functions.saveProfile(
         currentUser: _currentUser!,
-        newName: nome,
-        newPhone: telefone,
+        newName: newName,
+        newPhone: newPhone,
       );
 
       if (mounted) {
         setState(() => _currentUser = updatedUser);
-        _showSuccessSnackBar("Perfil atualizado com sucesso!");
+        AppFeedback.show(
+          context,
+          "Perfil atualizado com sucesso!",
+          type: FeedbackType.success,
+        );
       }
     } catch (e) {
-      _showErrorSnackBar(ErrorHandler.mapearErro(e));
+      if (mounted) {
+        AppFeedback.show(
+          context,
+          ErrorHandler.mapearErro(e),
+          type: FeedbackType.error,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  /// Exibe o diálogo para edição do perfil do usuário.
+  void _showEditProfileDialog() async {
+    if (_currentUser == null) return;
+
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (_) => ChangeInformationsDialog(currentUser: _currentUser!),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      await _saveProfile(
+        newName: result['nome']!,
+        newPhone: result['telefone']!,
+      );
+    }
+  }
+
+  /// Exibe um diálogo de confirmação para revogar o acesso de um usuário.
+  void _showRevokeAccessDialog(Usuario userToRevoke) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+        ),
+        title: const Text('Revogar Acesso'),
+        content: Text(
+          'Tem certeza que deseja remover o acesso de ${userToRevoke.nome}? O usuário precisará ser aprovado novamente para entrar no sistema.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('CANCELAR'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('REVOGAR'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _revokeUserAccess(userToRevoke);
+    }
+  }
+
+  /// Revoga o acesso de um usuário e atualiza as listas locais.
+  Future<void> _revokeUserAccess(Usuario userToRevoke) async {
+    setState(() => _isLoading = true);
+    try {
+      final revokedUser = await _functions.revokeUserAccess(userToRevoke);
+      if (mounted) {
+        setState(() {
+          _authenticatedUsers.removeWhere((u) => u.id == revokedUser.id);
+          _pendingUsers.add(revokedUser);
+        });
+        AppFeedback.show(
+          context,
+          'Acesso de ${revokedUser.nome} foi revogado.',
+          type: FeedbackType.success,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        AppFeedback.show(
+          context,
+          ErrorHandler.mapearErro(e),
+          type: FeedbackType.error,
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -153,7 +238,10 @@ class _SettingsPageState extends State<SettingsPage> {
   void _showPendingUsersDialog() async {
     final Usuario? approvedUser = await showDialog(
       context: context,
-      builder: (_) => PendingUsersDialog(pendingUsers: _pendingUsers),
+      builder: (_) => PendingUsersDialog(
+        pendingUsers: _pendingUsers,
+        functions: _functions,
+      ),
     );
 
     if (approvedUser != null) {
@@ -166,7 +254,13 @@ class _SettingsPageState extends State<SettingsPage> {
           return a.nome.compareTo(b.nome);
         });
       });
-      _showSuccessSnackBar("${approvedUser.nome} foi permitido no sistema!");
+      if (mounted) {
+        AppFeedback.show(
+          context,
+          "${approvedUser.nome} foi permitido no sistema!",
+          type: FeedbackType.success,
+        );
+      }
     }
   }
 
@@ -190,9 +284,9 @@ class _SettingsPageState extends State<SettingsPage> {
         : AppColors.primary;
 
     return Scaffold(
-      appBar: _SettingsAppBar(themeColor: themeColor, onLogout: _logout),
+      appBar: SettingsAppBar(themeColor: themeColor, onLogout: _logout),
       floatingActionButton: widget.isAdmin && _pendingUsers.isNotEmpty
-          ? _PendingUsersButton(
+          ? PendingUsersButton(
               count: _pendingUsers.length,
               onPressed: _showPendingUsersDialog,
             )
@@ -218,10 +312,9 @@ class _SettingsPageState extends State<SettingsPage> {
               child: ListView(
                 padding: const EdgeInsets.all(AppDimensions.spaceLarge),
                 children: [
-                  _ProfileSection(
-                    nomeController: _nomeController,
-                    telefoneController: _telefoneController,
-                    onSave: _saveProfile,
+                  ProfileInfoCard(
+                    currentUser: _currentUser!,
+                    onEdit: _showEditProfileDialog,
                     themeColor: themeColor,
                   ),
                   const SizedBox(height: AppDimensions.spaceXLarge),
@@ -233,140 +326,15 @@ class _SettingsPageState extends State<SettingsPage> {
                         ? 'usuário'
                         : 'usuários',
                   ),
-                  _UsersListView(users: _authenticatedUsers),
+                  UsersListView(
+                    users: _authenticatedUsers,
+                    onUserLongPress: widget.isAdmin
+                        ? _showRevokeAccessDialog
+                        : null,
+                  ),
                 ],
               ),
             ),
     );
-  }
-
-  void _showErrorSnackBar(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: AppColors.error),
-    );
-  }
-
-  void _showSuccessSnackBar(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: AppColors.success),
-    );
-  }
-
-  void _showInfoSnackBar(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: AppColors.textDisabled),
-    );
-  }
-}
-
-/// Barra superior personalizada com botão integrado de saída.
-class _SettingsAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final Color themeColor;
-  final VoidCallback onLogout;
-
-  const _SettingsAppBar({required this.themeColor, required this.onLogout});
-
-  @override
-  Widget build(BuildContext context) {
-    return AppBar(
-      title: const Text("Equipe & Perfil"),
-      backgroundColor: themeColor,
-      foregroundColor: AppColors.textPrimary,
-      centerTitle: true,
-      actions: [
-        IconButton(
-          icon: const Icon(AppIcons.logout),
-          onPressed: onLogout,
-          tooltip: 'Sair do Sistema',
-        ),
-      ],
-    );
-  }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-}
-
-/// Botão flutuante para administradores gerenciarem entradas pendentes.
-class _PendingUsersButton extends StatelessWidget {
-  final int count;
-  final VoidCallback onPressed;
-
-  const _PendingUsersButton({required this.count, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return FloatingActionButton.extended(
-      onPressed: onPressed,
-      label: Text('$count'),
-      icon: const Icon(AppIcons.aprovacoesPendentes),
-      backgroundColor: AppColors.primaryAlternative,
-      foregroundColor: AppColors.textPrimary,
-      tooltip: 'Aprovações Pendentes',
-    );
-  }
-}
-
-/// Cartão contendo o formulário de edição de dados básicos do perfil.
-class _ProfileSection extends StatelessWidget {
-  final TextEditingController nomeController;
-  final TextEditingController telefoneController;
-  final VoidCallback onSave;
-  final Color themeColor;
-
-  const _ProfileSection({
-    required this.nomeController,
-    required this.telefoneController,
-    required this.onSave,
-    required this.themeColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCardContainer(
-      icone: AppIcons.dadosPessoaisSection,
-      titulo: 'MEUS DADOS',
-      children: [
-        AppTextField(
-          controller: nomeController,
-          label: 'Nome de Usuário',
-          icon: AppIcons.nome,
-        ),
-        const SizedBox(height: AppDimensions.spaceLarge),
-        AppTextField(
-          controller: telefoneController,
-          label: 'Meu Telefone',
-          icon: AppIcons.telefone,
-          keyboardType: TextInputType.phone,
-          inputFormatters: [AppFormatters.telefone],
-        ),
-        const SizedBox(height: AppDimensions.spaceXLarge),
-        ElevatedButton(
-          onPressed: onSave,
-          style: ElevatedButton.styleFrom(backgroundColor: themeColor),
-          child: const Text('SALVAR ALTERAÇÕES'),
-        ),
-      ],
-    );
-  }
-}
-
-/// Lista reativa que mapeia e exibe os cartões da equipe autenticada.
-class _UsersListView extends StatelessWidget {
-  final List<Usuario> users;
-
-  const _UsersListView({required this.users});
-
-  @override
-  Widget build(BuildContext context) {
-    if (users.isEmpty) {
-      return const AppEmptyListIndicator(
-        message: "Nenhum outro usuário na equipe.",
-      );
-    }
-    return Column(children: users.map((user) => UserCard(user: user)).toList());
   }
 }

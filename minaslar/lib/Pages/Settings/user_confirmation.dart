@@ -2,7 +2,7 @@ import '../../Core/Design/design_system.dart';
 import '../../Core/Errors/errors.dart';
 import '../../Core/Widgets/widgets.dart';
 import '../../Features/Modelos/usuario_model.dart';
-import '../../Features/Repositorios/usuario_repository.dart';
+import '../../Core/Services/settings_functions.dart';
 
 /// [uso] Diálogo modal interativo utilizado para listar e aprovar funcionários
 /// que estão com o cadastro pendente de liberação no sistema.
@@ -11,8 +11,13 @@ import '../../Features/Repositorios/usuario_repository.dart';
 /// conceder o acesso definitivo.
 class PendingUsersDialog extends StatefulWidget {
   final List<Usuario> pendingUsers;
+  final SettingsFunctions functions;
 
-  const PendingUsersDialog({super.key, required this.pendingUsers});
+  const PendingUsersDialog({
+    super.key,
+    required this.pendingUsers,
+    required this.functions,
+  });
 
   @override
   State<PendingUsersDialog> createState() => _PendingUsersDialogState();
@@ -20,8 +25,6 @@ class PendingUsersDialog extends StatefulWidget {
 
 class _PendingUsersDialogState extends State<PendingUsersDialog> {
   /// Repositório para gerenciamento e persistência dos dados de usuários.
-  final _usuarioRepository = UsuarioRepository();
-
   /// Controla o estado de carregamento durante a requisição de aprovação.
   bool _isApproving = false;
 
@@ -29,9 +32,7 @@ class _PendingUsersDialogState extends State<PendingUsersDialog> {
   Future<void> _approveUser(Usuario userToApprove) async {
     setState(() => _isApproving = true);
     try {
-      final approvedUser = userToApprove.copyWith(autenticado: true);
-      await _usuarioRepository.salvarUsuario(approvedUser);
-
+      final approvedUser = await widget.functions.approveUser(userToApprove);
       if (mounted) {
         // Retorna o usuário aprovado para que a tela principal atualize a lista local.
         Navigator.of(context).pop(approvedUser);

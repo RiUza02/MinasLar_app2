@@ -8,14 +8,30 @@ environment:
   sdk: ^3.10.1
 
 dependencies:
+  # SDK central do Flutter para construir a interface e gerenciar o ciclo de vida do app.
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
-  supabase_flutter: ^2.16.0
+
+  # Conjunto de ícones padrão do design de interfaces da Apple (iOS).
+  cupertino_icons: ^1.0.9
+
+  # Integração com o Supabase (Banco de dados relacional, Autenticação, Storage, etc.).
+  supabase_flutter: ^2.15.4
+
+  # Aplica máscaras em campos de texto em tempo de digitação (essencial para formatar telefones).
   mask_text_input_formatter: ^2.9.0
-  local_auth: ^3.0.2
+
+  # Autenticação biométrica local do dispositivo (Leitura digital e Reconhecimento Facial).
+  local_auth: ^3.0.1
+
+  # Armazenamento local criptografado para salvar chaves e tokens de sessão com segurança.
   flutter_secure_storage: ^10.3.1
-  flutter_launcher_icons: ^0.14.3
+
+  # Ferramenta que automatiza a geração e substituição dos ícones de abertura (Launcher Icons) do app.
+  flutter_launcher_icons: ^0.14.4
+
+  # Abre URLs externas do sistema, como o aplicativo do WhatsApp, navegador de internet ou o discador de chamadas.
+  url_launcher: ^6.3.2
 
 flutter_launcher_icons:
   android: "launcher_icon"
@@ -23,8 +39,11 @@ flutter_launcher_icons:
   min_sdk_android: 21
 
 dev_dependencies:
+  # Framework oficial para criação e execução de testes automatizados no Flutter.
   flutter_test:
     sdk: flutter
+
+  # Analisador estático que sugere melhorias e garante que o código siga as boas práticas de desenvolvimento em Dart.
   flutter_lints: ^6.0.0
 
 flutter:

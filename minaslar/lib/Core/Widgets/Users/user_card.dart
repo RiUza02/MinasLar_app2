@@ -1,7 +1,7 @@
-import '../../Features/Modelos/usuario_model.dart';
-import '../Services/communication.dart';
-import '../Utils/formatters.dart';
-import '../Design/design_system.dart';
+import '../../../Features/Modelos/usuario_model.dart';
+import '../../Services/communication.dart';
+import '../../Utils/formatters.dart';
+import '../../Design/design_system.dart';
 
 /// Card customizável para exibição de informações cadastrais simplificadas de membros da equipe.
 ///
@@ -10,8 +10,14 @@ import '../Design/design_system.dart';
 class UserCard extends StatelessWidget {
   final Usuario user;
   final Widget? trailing;
+  final void Function(Usuario)? onLongPress;
 
-  const UserCard({super.key, required this.user, this.trailing});
+  const UserCard({
+    super.key,
+    required this.user,
+    this.trailing,
+    this.onLongPress,
+  });
 
   /// Extrai as iniciais do primeiro e do segundo nome para compor a imagem de placeholder do avatar.
   String _getInitials(String name) {
@@ -36,65 +42,71 @@ class UserCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: AppDimensions.spaceMedium),
       elevation: 1,
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.spaceMedium),
-        child: Row(
-          children: [
-            // Placeholder visual circular com as iniciais do usuário
-            CircleAvatar(
-              radius: 22,
-              backgroundColor: avatarColor.withValues(alpha: 0.2),
-              child: Text(
-                initials,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: avatarColor,
-                  fontWeight: FontWeight.bold,
+      child: InkWell(
+        onLongPress: (onLongPress != null && !user.isAdmin)
+            ? () => onLongPress!(user)
+            : null,
+        child: Padding(
+          padding: const EdgeInsets.all(AppDimensions.spaceMedium),
+          child: Row(
+            children: [
+              // Placeholder visual circular com as iniciais do usuário
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: avatarColor.withValues(alpha: 0.2),
+                child: Text(
+                  initials,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: avatarColor,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: AppDimensions.spaceMedium),
-            // Detalhes textuais identificadores do perfil
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          user.nome,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            fontWeight: FontWeight.w600,
+              const SizedBox(width: AppDimensions.spaceMedium),
+              // Detalhes textuais identificadores do perfil
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            user.nome,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      // Renderiza a tag de destaque caso o usuário possua permissões de admin
-                      if (isUserAdmin) ...[
-                        const SizedBox(width: AppDimensions.spaceSmall),
-                        const _AdminTag(),
+                        // Renderiza a tag de destaque caso o usuário possua permissões de admin
+                        if (isUserAdmin) ...[
+                          const SizedBox(width: AppDimensions.spaceSmall),
+                          const _AdminTag(),
+                        ],
                       ],
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  // Telefone formatado visualmente aplicando as máscaras do projeto
-                  Text(
-                    AppFormatters.telefone.maskText(user.telefone),
-                    style: AppTextStyles.bodyMediumSecondary.copyWith(
-                      fontSize: 13,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    // Telefone formatado visualmente aplicando as máscaras do projeto
+                    Text(
+                      AppFormatters.telefone.maskText(user.telefone),
+                      style: AppTextStyles.bodyMediumSecondary.copyWith(
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: AppDimensions.spaceSmall),
-            // Injeta o widget de ação customizado ou herda os botões padrões de comunicação
-            trailing ?? _buildDefaultActions(context),
-          ],
+              const SizedBox(width: AppDimensions.spaceSmall),
+              // Injeta o widget de ação customizado ou herda os botões padrões de comunicação
+              trailing ?? _buildDefaultActions(context),
+            ],
+          ),
         ),
       ),
     );

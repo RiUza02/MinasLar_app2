@@ -108,4 +108,22 @@ class SettingsFunctions {
     // Limpa a memória volátil do repositório
     _usuarioRepository.invalidarCache();
   }
+
+  /// [Uso] Aprova um usuário pendente, alterando seu status para autenticado.
+  ///
+  /// Retorna o modelo do usuário atualizado em caso de sucesso.
+  Future<Usuario> approveUser(Usuario userToApprove) async {
+    final approvedUser = userToApprove.copyWith(autenticado: true);
+    await _usuarioRepository.salvarUsuario(approvedUser);
+    return approvedUser;
+  }
+
+  /// [Uso] Revoga o acesso de um usuário, alterando seu status para não autenticado.
+  ///
+  /// Retorna o modelo do usuário atualizado em caso de sucesso.
+  Future<Usuario> revokeUserAccess(Usuario userToRevoke) async {
+    final revokedUser = userToRevoke.copyWith(autenticado: false);
+    await _usuarioRepository.salvarUsuario(revokedUser);
+    return revokedUser;
+  }
 }

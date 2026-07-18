@@ -13,12 +13,14 @@ class AppCardContainer extends StatelessWidget {
 
   /// Lista de widgets (geralmente campos de texto ou botões) que ficarão dentro do card.
   final List<Widget> children;
+  final Widget? action;
 
   const AppCardContainer({
     super.key,
     required this.titulo,
     required this.icone,
     required this.children,
+    this.action,
   });
 
   @override
@@ -44,6 +46,8 @@ class AppCardContainer extends StatelessWidget {
               ),
               const SizedBox(width: AppDimensions.spaceSmall),
               Text(titulo, style: AppTextStyles.cardHeader),
+              const Spacer(),
+              ?action,
             ],
           ),
           const SizedBox(height: AppDimensions.spaceLarge),

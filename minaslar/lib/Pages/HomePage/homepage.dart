@@ -1,5 +1,6 @@
 import '../../../core/Design/design_system.dart';
 import '../Settings/settings_page.dart';
+import 'Overview/overview.dart';
 
 // ============================================================================
 // REGISTRO DE MIGRAÇÃO DE TELAS (DIRETÓRIO: 'Rascunho' -> Design System)
@@ -9,7 +10,7 @@ import '../Settings/settings_page.dart';
 // [ ] Dashboard  (Exclusivo Administrador)
 // [ ] Agenda     (Administrador / Usuário Comum)
 // [ ] Assistente (Administrador / Usuário Comum)
-// [ ] Home       (Administrador / Usuário Comum)
+// [X] Home       (Adicionado)
 // [ ] Clientes   (Administrador / Usuário Comum)
 // [ ] Orçamentos (Administrador / Usuário Comum)
 // [X] Configurações (Adicionado)
@@ -84,8 +85,15 @@ class _OverviewState extends State<Overview> {
       ];
     }
 
-    // Gera páginas temporárias enquanto as telas reais não são migradas
-    _pages = _navBarItems.map((item) => _placeholder(item.label!)).toList();
+    // Mapeia os itens da barra de navegação para as páginas correspondentes.
+    _pages = _navBarItems.map((item) {
+      switch (item.label) {
+        case 'Home':
+          return HomePage(isAdmin: widget.isAdmin);
+        default:
+          return _placeholder(item.label!);
+      }
+    }).toList();
     _pageController = PageController(initialPage: _selectedIndex);
   }
 

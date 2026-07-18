@@ -33,6 +33,10 @@ dependencies:
   # Abre URLs externas do sistema, como o aplicativo do WhatsApp, navegador de internet ou o discador de chamadas.
   url_launcher: ^6.3.2
 
+  # Permite a integração com o Google Maps, exibindo mapas interativos e marcadores de localização.
+  geocoding: ^5.0.0
+  geolocator: ^14.0.3
+
 flutter_launcher_icons:
   android: "launcher_icon"
   image_path: "lib/Core/Design/Assets/icon.png"

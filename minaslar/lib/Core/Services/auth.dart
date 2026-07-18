@@ -2,7 +2,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import '../Design/design_system.dart';
 import '../../Pages/CadastroLogin/login.dart';
-import '../../Pages/HomePage/overview.dart';
+import '../../Pages/HomePage/homepage.dart';
 
 /// **[Uso]**: Como a primeira página carregada no `main.dart`. Ela atua como o guarda de trânsito
 /// inicial do app, decidindo se manda o usuário para o Login ou para a Home com base na segurança do aparelho.

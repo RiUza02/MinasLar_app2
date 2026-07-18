@@ -29,6 +29,11 @@ class UnknownException extends AppException {
   ]);
 }
 
+/// [Uso]: Falhas relacionadas ao serviço de geolocalização (GPS desativado, permissão negada).
+class LocationException extends AppException {
+  const LocationException(super.message);
+}
+
 /// [Uso]: Disparado quando a sessão do usuário no app não corresponde a nenhum usuário no banco.
 class SessionDivergenceException extends AppException {
   const SessionDivergenceException([

@@ -45,6 +45,12 @@ class AppColors {
   /// [Uso]: Linhas finas de separação (`Divider`) dentro de cards para dividir
   static const Color borderLight = Colors.white24;
 
+  /// [Uso]: Cor para orçamentos agendados para o turno da manhã.
+  static const Color morningShift = Color(0xFFFBC02D);
+
+  /// [Uso]: borda para orçamentos agendados para o turno da tarde.
+  static const Color afternoonShift = Color(0xFFEF6C00);
+
   // --- CORES DE STATUS ---
 
   /// [Uso]: Indicações de sucesso. Usado no fundo do botão "Salvar no Supabase"

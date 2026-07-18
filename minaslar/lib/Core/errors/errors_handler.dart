@@ -27,7 +27,12 @@ class ErrorHandler {
       return _catalogarErroString(error);
     }
 
-    // 5. Se for qualquer outro tipo de objeto convertendo pra texto
+    // 5. Se for um erro de localização
+    if (error is LocationException) {
+      return error.message;
+    }
+
+    // 6. Se for qualquer outro tipo de objeto convertendo pra texto
     return _catalogarErroString(error.toString());
   }
 

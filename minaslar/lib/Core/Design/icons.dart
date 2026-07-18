@@ -52,7 +52,7 @@ class AppIcons {
   static const IconData nome = Icons.person_outline;
 
   /// [Uso]: PrefixIcon do campo de número de Telefone/Celular.
-  static const IconData telefone = Icons.phone_android;
+  static const IconData telefone = Icons.phone;
 
   /// [Uso]: PrefixIcon do campo de entrada de Senha.
   static const IconData senha = Icons.lock_outline;

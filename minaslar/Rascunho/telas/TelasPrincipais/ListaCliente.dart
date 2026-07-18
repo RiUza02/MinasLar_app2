@@ -9,7 +9,7 @@ import '../TelasSecundarias/DetalhesCliente.dart';
 import '../TelasSecundarias/AdicionarCliente.dart';
 import '../../servicos/servicos.dart';
 
-/// Define os critérios de ordenação da lista de clientes.
+/// Define os critérios de ordenação da lista de clientes.  
 enum TipoOrdenacao { alfabetica, ultimoServico, bairro }
 
 // ==================================================

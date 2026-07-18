@@ -4,7 +4,7 @@ import '../../../core/Design/design_system.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../core/errors/errors.dart';
 import 'criar_conta.dart';
-import '../HomePage/overview.dart';
+import '../HomePage/homepage.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

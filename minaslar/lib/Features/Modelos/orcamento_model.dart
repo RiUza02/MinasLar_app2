@@ -78,17 +78,17 @@ class Orcamento {
   Map<String, dynamic> toMap() {
     return {
       if (id != null) 'id': id,
-      'user_id': clienteId,
+      'cliente_id': clienteId,
       'titulo': titulo.trim(),
       'descricao': descricao?.trim(),
-      'data_pega': dataPega.toIso8601String(),
-      'data_entrega': dataEntrega?.toIso8601String(),
+      'data_pega': dataPega.toUtc().toIso8601String(),
+      'data_entrega': dataEntrega?.toUtc().toIso8601String(),
       'valor': valor,
       'horario_do_dia': horarioDoDia.valor,
       'entregue': entregue,
       'eh_retorno': ehRetorno,
       'eh_urgente': ehUrgente,
-      'atualizado_em': DateTime.now().toIso8601String(),
+      'atualizado_em': DateTime.now().toUtc().toIso8601String(),
     };
   }
 

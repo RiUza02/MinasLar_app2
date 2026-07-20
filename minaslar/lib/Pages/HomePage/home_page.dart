@@ -1,37 +1,38 @@
 import '../../../core/Design/design_system.dart';
 import '../Settings/settings_page.dart';
-import 'Overview/overview.dart';
+import 'lista_cliente.dart';
+import 'overview.dart'; // Mantido conforme seu original (verifique se não há auto-referência cíclica no seu projeto)
 
 // ============================================================================
 // REGISTRO DE MIGRAÇÃO DE TELAS (DIRETÓRIO: 'Rascunho' -> Design System)
 // ============================================================================
-// Status atual: 1/7 telas migradas. Todas estão operando via _placeholder.
+// Status atual: 3/7 telas migradas. As demais estão operando via _placeholder.
 //
 // [ ] Dashboard  (Exclusivo Administrador)
 // [ ] Agenda     (Administrador / Usuário Comum)
 // [ ] Assistente (Administrador / Usuário Comum)
 // [X] Home       (Adicionado)
-// [ ] Clientes   (Administrador / Usuário Comum)
+// [X] Clientes   (Adicionado)
 // [ ] Orçamentos (Administrador / Usuário Comum)
 // [X] Configurações (Adicionado)
 // ============================================================================
 
-/// Tela principal de navegação (Shell) pós-login.
+/// [uso] Tela principal de navegação (Shell) pós-login.
 ///
 /// Controla a exibição das seções por meio de um [PageView] e uma
 /// [BottomNavigationBar], adaptando as opções exibidas conforme o perfil
 /// definido por [isAdmin].
-class Overview extends StatefulWidget {
+class HomePage extends StatefulWidget {
   final bool isAdmin;
   final String nomeUsuario;
 
-  const Overview({super.key, required this.isAdmin, required this.nomeUsuario});
+  const HomePage({super.key, required this.isAdmin, required this.nomeUsuario});
 
   @override
-  State<Overview> createState() => _OverviewState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _OverviewState extends State<Overview> {
+class _HomePageState extends State<HomePage> {
   late final PageController _pageController;
   late int _selectedIndex;
 
@@ -89,7 +90,10 @@ class _OverviewState extends State<Overview> {
     _pages = _navBarItems.map((item) {
       switch (item.label) {
         case 'Home':
-          return HomePage(isAdmin: widget.isAdmin);
+          return OverView(isAdmin: widget.isAdmin);
+        case 'Clientes':
+          // Redireciona a aba Clientes para a página importada
+          return const ListaClientePage();
         default:
           return _placeholder(item.label!);
       }
@@ -103,7 +107,7 @@ class _OverviewState extends State<Overview> {
     super.dispose();
   }
 
-  /// Executa a transição animada entre as telas do PageView.
+  /// [uso] Executa a transição animada entre as telas do PageView.
   void _navegarParaPagina(int index) {
     _pageController.animateToPage(
       index,
@@ -112,14 +116,14 @@ class _OverviewState extends State<Overview> {
     );
   }
 
-  /// Sincroniza o índice da barra de navegação com o gesto de mudança de página.
+  /// [uso] Sincroniza o índice da barra de navegação com o gesto de mudança de página.
   void _onPageChanged(int index) {
     setState(() {
       _selectedIndex = index;
     });
   }
 
-  /// Gera uma interface visual temporária para telas ainda não implementadas.
+  /// [uso] Gera uma interface visual temporária para telas ainda não implementadas.
   Widget _placeholder(String label) {
     return Center(
       child: Padding(
@@ -156,35 +160,37 @@ class _OverviewState extends State<Overview> {
     final Color navBarColor = widget.isAdmin
         ? AppColors.primaryAlternative
         : AppColors.primary;
-    final String currentPageTitle = _navBarItems[_selectedIndex].label!;
+    final String currentPageTitle = _navBarItems[_selectedIndex].label!; //
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(currentPageTitle),
-        backgroundColor: navBarColor,
-        foregroundColor: AppColors.textPrimary,
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        actions: [
-          // Ícone de engrenagem redirecionando para as Configurações
-          IconButton(
-            icon: const Icon(AppIcons.settings),
-            tooltip: 'Configurações',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SettingsPage(isAdmin: widget.isAdmin),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+      // MODIFICAÇÃO: O AppBar inteiro agora é condicional e tem tamanho personalizado
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(40.0),
+        child: AppBar(
+          title: Text(currentPageTitle),
+          backgroundColor: navBarColor,
+          foregroundColor: AppColors.textPrimary,
+          centerTitle: true,
+          automaticallyImplyLeading: false,
+          actions: [
+            IconButton(
+              icon: const Icon(AppIcons.settings),
+              tooltip: 'Configurações',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SettingsPage(isAdmin: widget.isAdmin),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ), // 👈 Faz a barra sumir por completo em qualquer aba que não seja a Home![cite: 7]
       body: PageView(
         controller: _pageController,
         onPageChanged: _onPageChanged,
-        // Trava o arrasto manual para forçar a navegação exclusivamente pelos ícones
         physics: const NeverScrollableScrollPhysics(),
         children: _pages,
       ),

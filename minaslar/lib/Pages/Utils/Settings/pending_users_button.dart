@@ -1,15 +1,8 @@
 import '../../../../Core/Design/design_system.dart';
 
-/// Botão flutuante para gerenciamento de aprovações.
-///
-/// [Uso] Este componente é utilizado como um atalho visual (Floating Action Button)
-/// para exibir a quantidade de novos usuários aguardando validação e direcionar
-/// o administrador para a tela de gerenciamento de entradas.
+/// [uso]: Botão flutuante estendido que exibe o número de aprovações pendentes para administradores.
 class PendingUsersButton extends StatelessWidget {
-  /// Quantidade atual de aprovações pendentes.
   final int count;
-
-  /// Ação disparada ao pressionar o botão.
   final VoidCallback onPressed;
 
   const PendingUsersButton({

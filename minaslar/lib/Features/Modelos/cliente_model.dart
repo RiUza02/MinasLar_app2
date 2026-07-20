@@ -1,48 +1,19 @@
-/// Esta classe é imutável e foi projetada para lidar de forma otimizada com
-/// consultas, inserções e modificações contínuas no banco de dados Supabase.
+/// Classe imutável da entidade Cliente.
 class Cliente {
-  /// Identificador único (UUID ou numérico) vindo do banco de dados.
   final String? id;
-
-  /// Nome completo do cliente.
   final String nome;
-
-  /// Nome da rua do endereço.
   final String rua;
-
-  /// Número do imóvel. Mantido como [String] para suportar formatos como "104-B" ou "S/N".
   final String numero;
-
-  /// Complemento do endereço (ex: "Apto 302, Bloco C", "Fundos").
   final String? complemento;
-
-  /// Bairro do endereço do cliente.
   final String bairro;
-
-  /// Número de telefone principal para contato.
   final String telefone;
-
-  /// Cadastro de Pessoa Física (CPF), caso seja pessoa física.
   final String? cpf;
-
-  /// Cadastro Nacional da Pessoa Jurídica (CNPJ), caso seja pessoa jurídica.
   final String? cnpj;
-
-  /// Indicador de risco. Se [true], sinaliza que o cliente possui um histórico
-  /// de inadimplência ou problemas contratuais/comportamentais no sistema.
   final bool clienteProblematico;
-
-  /// Anotações gerais, histórico resumido ou preferências do cliente.
   final String? observacao;
-
-  /// Data e hora exatas em que o registro foi criado no banco de dados.
   final DateTime? criadoEm;
+  final String? ultimoOrcamento; // Data do serviço ou ID associado
 
-  /// Data e hora da última modificação nos dados do cliente.
-  /// Fundamental para ordenação cronológica e auditoria de cadastros.
-  final DateTime? atualizadoEm;
-
-  /// Construtor principal para criar uma instância imutável de [Cliente].
   const Cliente({
     this.id,
     required this.nome,
@@ -56,13 +27,14 @@ class Cliente {
     this.clienteProblematico = false,
     this.observacao,
     this.criadoEm,
-    this.atualizadoEm,
+    this.ultimoOrcamento,
   });
 
   // ==================================================
-  // MÉTODOS DE SERIALIZAÇÃO E OTIMIZAÇÃO (SUPABASE)
+  // SERIALIZAÇÃO
   // ==================================================
-  /// Converte a instância do objeto [Cliente] em um [Map] compatível com o Supabase.
+
+  /// [uso]: Prepara os dados do cliente para salvar ou atualizar no Supabase/Banco de Dados.
   Map<String, dynamic> toMap() {
     return {
       if (id != null) 'id': id,
@@ -73,43 +45,81 @@ class Cliente {
       'bairro': bairro.trim(),
       'observacao': observacao?.trim(),
       'cliente_problematico': clienteProblematico,
-      // Converte automaticamente para apenas numeros, removendo espaços, traços e parênteses
-      'telefone': telefone.replaceAll(RegExp(r'[^0-9]'), ''),
-      'cpf': cpf?.replaceAll(RegExp(r'[^0-9]'), ''),
-      'cnpj': cnpj?.replaceAll(RegExp(r'[^0-9]'), ''),
-      // Atualiza automaticamente o carimbo de tempo da última modificação
-      'atualizado_em': DateTime.now().toIso8601String(),
+      // Salva apenas os números no banco
+      'telefone': _limparNumeros(telefone),
+      if (cpf != null) 'cpf': _limparNumeros(cpf!),
+      if (cnpj != null) 'cnpj': _limparNumeros(cnpj!),
+      // Envia o ID apenas se for um UUID válido
+      if (ultimoOrcamento != null && _isUuid(ultimoOrcamento!))
+        'ultimo_orcamento_id': ultimoOrcamento,
     };
   }
 
-  /// Cria uma instância de [Cliente] a partir de um [Map] (JSON) retornado pelo Supabase.
+  /// [uso]: Converte a resposta em JSON/Map vinda do Supabase em um objeto [Cliente] no app.
   factory Cliente.fromMap(Map<String, dynamic> map) {
+    // Trata a busca da data vinda de tabelas relacionadas (JOIN)
+    String? dataOuIdServico;
+    final rawOrcamento = map['orcamentos'];
+
+    if (rawOrcamento != null) {
+      final Map<String, dynamic> orcamentoMap = rawOrcamento is List
+          ? (rawOrcamento.isNotEmpty
+                ? rawOrcamento.first as Map<String, dynamic>
+                : {})
+          : (rawOrcamento as Map<String, dynamic>? ?? {});
+
+      dataOuIdServico =
+          orcamentoMap['data_pega']?.toString() ??
+          orcamentoMap['created_at']?.toString() ??
+          orcamentoMap['data']?.toString();
+    }
+
+    // Fallback caso a consulta venha sem o JOIN
+    dataOuIdServico ??=
+        map['ultimo_orcamento_data']?.toString() ??
+        map['ultimo_orcamento_id']?.toString();
+
     return Cliente(
       id: map['id']?.toString(),
-      nome: map['nome'] ?? '',
-      rua: map['rua'] ?? '',
-      numero: map['numero']?.toString() ?? '',
-      complemento: map['complemento'],
-      bairro: map['bairro'] ?? '',
-      telefone: map['telefone'] ?? '',
-      cpf: map['cpf'],
-      cnpj: map['cnpj'],
-      clienteProblematico: map['cliente_problematico'] ?? false,
-      observacao: map['observacao'],
+      nome: (map['nome'] ?? '').toString(),
+      rua: (map['rua'] ?? '').toString(),
+      numero: (map['numero'] ?? '').toString(),
+      complemento: map['complemento']?.toString(),
+      bairro: (map['bairro'] ?? '').toString(),
+      telefone: (map['telefone'] ?? '').toString(),
+      cpf: map['cpf']?.toString(),
+      cnpj: map['cnpj']?.toString(),
+      clienteProblematico: map['cliente_problematico'] == true,
+      observacao: map['observacao']?.toString(),
       criadoEm: map['criado_em'] != null
           ? DateTime.tryParse(map['criado_em'].toString())
           : null,
-      atualizadoEm: map['atualizado_em'] != null
-          ? DateTime.tryParse(map['atualizado_em'].toString())
-          : null,
+      ultimoOrcamento: dataOuIdServico,
     );
   }
 
   // ==================================================
-  // MÉTODOS DE CÓPIA E COMPARAÇÃO DE ESTADO
+  // MÉTODOS AUXILIARES
   // ==================================================
-  /// Cria uma cópia da instância atual de [Cliente], permitindo a alteração
-  /// de campos específicos de forma imutável (essencial para gerência de estado).
+
+  /// [uso]: Remove todos os caracteres não numéricos de uma string (máscaras, pontos e traços).
+  static String _limparNumeros(String valor) {
+    return valor.replaceAll(RegExp(r'[^0-9]'), '');
+  }
+
+  /// [uso]: Valida se o formato do texto corresponde a um UUID do PostgreSQL.
+  static bool _isUuid(String valor) {
+    final uuidRegex = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    );
+    return uuidRegex.hasMatch(valor);
+  }
+
+  // ==================================================
+  // CÓPIA E IGUALDADE
+  // ==================================================
+
+  /// [uso]: Clona o objeto [Cliente] permitindo alterar apenas os campos desejados.
   Cliente copyWith({
     String? id,
     String? nome,
@@ -123,7 +133,7 @@ class Cliente {
     bool? clienteProblematico,
     String? observacao,
     DateTime? criadoEm,
-    DateTime? atualizadoEm,
+    String? ultimoOrcamento,
   }) {
     return Cliente(
       id: id ?? this.id,
@@ -138,12 +148,11 @@ class Cliente {
       clienteProblematico: clienteProblematico ?? this.clienteProblematico,
       observacao: observacao ?? this.observacao,
       criadoEm: criadoEm ?? this.criadoEm,
-      atualizadoEm: atualizadoEm ?? this.atualizadoEm,
+      ultimoOrcamento: ultimoOrcamento ?? this.ultimoOrcamento,
     );
   }
 
-  /// Compara a igualdade estrutural dos objetos em vez da referência na memória.
-  /// Evita que a interface (UI) reconstrua widgets sem necessidade.
+  /// [uso]: Compara se dois objetos [Cliente] possuem os mesmos dados internos.
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -161,11 +170,10 @@ class Cliente {
         other.clienteProblematico == clienteProblematico &&
         other.observacao == observacao &&
         other.criadoEm == criadoEm &&
-        other.atualizadoEm == atualizadoEm;
+        other.ultimoOrcamento == ultimoOrcamento;
   }
 
-  /// Gera um hash único para o conteúdo do objeto. Essencial para performance
-  /// rápida ao armazenar clientes em estruturas como [Set] ou chaves de [Map].
+  /// [uso]: Gera o identificador numérico (hash) do objeto para otimizar o uso em Lists e Sets.
   @override
   int get hashCode {
     return Object.hash(
@@ -180,7 +188,7 @@ class Cliente {
       cnpj,
       clienteProblematico,
       observacao,
-      Object.hash(criadoEm, atualizadoEm),
+      Object.hash(criadoEm, ultimoOrcamento),
     );
   }
 }

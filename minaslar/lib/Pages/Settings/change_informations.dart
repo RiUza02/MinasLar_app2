@@ -3,14 +3,8 @@ import '../../Core/Utils/formatters.dart';
 import '../../Core/Widgets/widgets.dart';
 import '../../Features/Modelos/usuario_model.dart';
 
-/// Diálogo modal para a edição dos dados básicos do usuário logado.
-///
-/// [Uso] Este componente é exibido como uma janela sobreposta (Popup/Dialog)
-/// quando o usuário decide atualizar seu perfil. Ele fornece um formulário
-/// pré-preenchido para alteração de nome e telefone, gerenciando a validação local
-/// dos campos.
+/// [uso]: Diálogo modal para edição dos dados básicos (nome e telefone) do usuário logado.
 class ChangeInformationsDialog extends StatefulWidget {
-  /// O modelo do usuário contendo os dados atuais antes da edição.
   final Usuario currentUser;
 
   const ChangeInformationsDialog({super.key, required this.currentUser});
@@ -20,11 +14,6 @@ class ChangeInformationsDialog extends StatefulWidget {
       _ChangeInformationsDialogState();
 }
 
-/// Estado que gerencia o formulário de edição e os controladores de texto.
-///
-/// [Uso] Controla o ciclo de vida dos campos de entrada (`TextEditingController`),
-/// aplica as máscaras visuais nos dados iniciais e manipula o evento de salvamento,
-/// retornando as informações tratadas para a tela que invocou o diálogo.
 class _ChangeInformationsDialogState extends State<ChangeInformationsDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nomeController;
@@ -33,6 +22,7 @@ class _ChangeInformationsDialogState extends State<ChangeInformationsDialog> {
   @override
   void initState() {
     super.initState();
+    // Inicialização dos controllers com os dados atuais e aplicação da máscara no telefone
     _nomeController = TextEditingController(text: widget.currentUser.nome);
     _telefoneController = TextEditingController(
       text: AppFormatters.telefone.maskText(widget.currentUser.telefone),
@@ -46,11 +36,7 @@ class _ChangeInformationsDialogState extends State<ChangeInformationsDialog> {
     super.dispose();
   }
 
-  /// Valida o formulário e retorna os dados limpos para quem abriu o modal.
-  ///
-  /// [Uso] Se o formulário passar nas validações visuais de integridade,
-  /// este método remove as máscaras do telefone e fecha a janela, enviando de volta
-  /// um dicionário (`Map<String, String>`) com as novas strings limpas.
+  /// Valida o formulário, remove as máscaras e retorna os dados atualizados
   void _saveAndPop() {
     if (_formKey.currentState!.validate()) {
       final result = {

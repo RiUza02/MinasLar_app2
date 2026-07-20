@@ -1,12 +1,9 @@
 import '../../../Features/Modelos/usuario_model.dart';
-import '../../Services/communication.dart';
-import '../../Utils/formatters.dart';
-import '../../Design/design_system.dart';
+import '../../../Core/Services/communication.dart';
+import '../../../Core/Utils/formatters.dart';
+import '../../../Core/Design/design_system.dart';
 
-/// Card customizável para exibição de informações cadastrais simplificadas de membros da equipe.
-///
-/// **[Onde usar]**: Em listas de gerenciamento de equipe, telas de aprovação de novos membros
-/// ou painéis administrativos onde seja necessário exibir perfis com ações rápidas de contato.
+/// [uso]: Card customizável para exibição de informações cadastrais e ações rápidas de membros da equipe.
 class UserCard extends StatelessWidget {
   final Usuario user;
   final Widget? trailing;
@@ -19,7 +16,7 @@ class UserCard extends StatelessWidget {
     this.onLongPress,
   });
 
-  /// Extrai as iniciais do primeiro e do segundo nome para compor a imagem de placeholder do avatar.
+  /// Extrai as iniciais do nome para renderizar no avatar
   String _getInitials(String name) {
     if (name.isEmpty) return '?';
     final parts = name.trim().split(' ').where((p) => p.isNotEmpty).toList();
@@ -34,7 +31,6 @@ class UserCard extends StatelessWidget {
     final initials = _getInitials(user.nome);
     final bool isUserAdmin = user.isAdmin;
 
-    // Define a cor temática baseada nas permissões de acesso do perfil
     final Color avatarColor = isUserAdmin
         ? AppColors.adminColor
         : AppColors.primary;
@@ -54,7 +50,7 @@ class UserCard extends StatelessWidget {
           padding: const EdgeInsets.all(AppDimensions.spaceMedium),
           child: Row(
             children: [
-              // Placeholder visual circular com as iniciais do usuário
+              // Avatar com as iniciais do usuário
               CircleAvatar(
                 radius: 22,
                 backgroundColor: avatarColor.withValues(alpha: 0.2),
@@ -67,7 +63,7 @@ class UserCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppDimensions.spaceMedium),
-              // Detalhes textuais identificadores do perfil
+              // Nome, tag de admin e telefone formatado
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -84,7 +80,6 @@ class UserCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        // Renderiza a tag de destaque caso o usuário possua permissões de admin
                         if (isUserAdmin) ...[
                           const SizedBox(width: AppDimensions.spaceSmall),
                           const _AdminTag(),
@@ -92,7 +87,6 @@ class UserCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    // Telefone formatado visualmente aplicando as máscaras do projeto
                     Text(
                       AppFormatters.telefone.maskText(user.telefone),
                       style: AppTextStyles.bodyMediumSecondary.copyWith(
@@ -103,7 +97,7 @@ class UserCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppDimensions.spaceSmall),
-              // Injeta o widget de ação customizado ou herda os botões padrões de comunicação
+              // Ações customizadas ou botões padrão de ligação/WhatsApp
               trailing ?? _buildDefaultActions(context),
             ],
           ),
@@ -112,7 +106,7 @@ class UserCard extends StatelessWidget {
     );
   }
 
-  /// Constrói os atalhos nativos para chamadas telefônicas e disparos para o WhatsApp.
+  /// Atalhos nativos para chamadas telefônicas e WhatsApp
   Widget _buildDefaultActions(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -139,7 +133,7 @@ class UserCard extends StatelessWidget {
   }
 }
 
-/// Tag interna privada para identificação visual e rotulagem de administradores.
+/// Tag privada para destaque visual de administradores
 class _AdminTag extends StatelessWidget {
   const _AdminTag();
 

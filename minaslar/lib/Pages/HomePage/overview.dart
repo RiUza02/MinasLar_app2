@@ -1,22 +1,22 @@
 import '../../../Core/Design/design_system.dart';
 import '../../../Core/Errors/errors.dart';
+import '../../../Core/Services/route_calculator.dart';
 import '../../../Core/Widgets/widgets.dart';
 import '../../../Features/Repositorios/orcamento_repository.dart';
-import '../../../core/Services/route_calculator.dart';
 
-/// [uso] Tela principal de listagem dos agendamentos do dia, com interface adaptada ao perfil de acesso (Administrador ou Técnico).
-class HomePage extends StatefulWidget {
+/// [uso]: Tela principal de agendamentos do dia adaptada ao perfil do usuário (Admin ou Técnico).
+class OverView extends StatefulWidget {
   final bool isAdmin;
 
-  const HomePage({super.key, required this.isAdmin});
+  const OverView({super.key, required this.isAdmin});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<OverView> createState() => _OverViewState();
 }
 
-class _HomePageState extends State<HomePage>
+class _OverViewState extends State<OverView>
     with AutomaticKeepAliveClientMixin {
-  // Preserva o estado da tela e a posição do scroll ao alternar entre as abas da BottomNavigationBar.
+  // Preserva o estado da aba ao alternar na BottomNavigationBar
   @override
   bool get wantKeepAlive => true;
 
@@ -34,17 +34,16 @@ class _HomePageState extends State<HomePage>
     _futureOrcamentos = _orcamentoRepository.buscarOrcamentosDoDia();
   }
 
-  /// [uso] Executa a reconsulta ao banco de dados e sincroniza o estado visual com o indicador de carregamento do RefreshIndicator.
+  /// [uso]: Recarrega a lista de agendamentos e atualiza o estado para a animação do Pull-to-Refresh.
   Future<void> _atualizarLista() async {
     final novaConsulta = _orcamentoRepository.buscarOrcamentosDoDia();
     setState(() {
       _futureOrcamentos = novaConsulta;
     });
-    // Aguarda a requisição finalizar para que a animação circular de refresh desapareça no momento certo.
     await novaConsulta;
   }
 
-  /// [uso] Valida a existência de paradas na lista atual, formata os endereços e aciona o serviço nativo de mapas.
+  /// [uso]: Extrai os endereços da lista de agendamentos e abre o aplicativo de mapas com a rota otimizada.
   Future<void> _gerarRota() async {
     if (_listaDeOrcamentosDoDia.isEmpty) {
       AppFeedback.show(
@@ -61,13 +60,13 @@ class _HomePageState extends State<HomePage>
       final List<Map<String, dynamic>> stopsData = _listaDeOrcamentosDoDia.map((
         orc,
       ) {
-        final cliente = orc['clientes'] ?? {};
+        final cliente = (orc['clientes'] as Map<String, dynamic>?) ?? {};
         return {
           'nome_cliente': cliente['nome'] ?? 'Cliente',
           'rua': cliente['rua'] ?? '',
           'numero': (cliente['numero'] ?? '').toString(),
           'bairro': cliente['bairro'] ?? '',
-          'cidade': 'Juiz de Fora', // Cidade Padrão
+          'cidade': 'Juiz de Fora',
         };
       }).toList();
 
@@ -83,16 +82,15 @@ class _HomePageState extends State<HomePage>
     }
   }
 
-  /// [uso] Inicia o fluxo de navegação para o formulário de cadastro de um novo atendimento.
+  /// [uso]: Abre a tela de criação de um novo orçamento.
   void _abrirNovoOrcamento() async {
-    // TODO: Implementar a navegação para a tela de adicionar orçamento.
     AppFeedback.show(
       context,
       'Função de adicionar orçamento ainda não implementada.',
     );
   }
 
-  /// [uso] Constrói o grupo vertical de botões flutuantes exclusivos para o perfil de administração.
+  /// [uso]: Constrói os botões flutuantes (FABs) de rota e novo orçamento para perfil administrador.
   Widget _buildAdminFabs() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
@@ -119,17 +117,19 @@ class _HomePageState extends State<HomePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    // O Scaffold interno isola os FloatingActionButtons desta tela da AppBar da estrutura principal.
     return Scaffold(
       backgroundColor: AppColors.background,
       floatingActionButton: widget.isAdmin ? _buildAdminFabs() : null,
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _futureOrcamentos,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          // Exibe loading central apenas se a lista estiver completamente vazia
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              _listaDeOrcamentosDoDia.isEmpty) {
             return Center(child: CircularProgressIndicator(color: _themeColor));
           }
 
+          // Exibe tela de erro amigável
           if (snapshot.hasError) {
             return AppErrorView(
               message: ErrorHandler.mapearErro(snapshot.error!),
@@ -144,10 +144,12 @@ class _HomePageState extends State<HomePage>
           final orcamentos = snapshot.data ?? [];
           _listaDeOrcamentosDoDia = orcamentos;
 
+          // Exibe indicador de lista vazia
           if (orcamentos.isEmpty) {
             return _buildEmptyState();
           }
 
+          // Renderiza a lista com Pull-to-Refresh
           return RefreshIndicator(
             color: _themeColor,
             backgroundColor: AppColors.cardBackground,
@@ -157,17 +159,15 @@ class _HomePageState extends State<HomePage>
                 AppDimensions.spaceLarge,
                 AppDimensions.spaceLarge,
                 AppDimensions.spaceLarge,
-                90, // Margem inferior de segurança para evitar sobreposição pelo FAB
+                90,
               ),
               itemCount: orcamentos.length,
-              // Garante que o gesto vertical de puxar funcione independentemente da quantidade de itens na tela.
               physics: const AlwaysScrollableScrollPhysics(),
               itemBuilder: (context, index) {
                 final orcamento = orcamentos[index];
                 return OrcamentoCard(
                   orcamento: orcamento,
                   onCardTap: () {
-                    // TODO: Implementar navegação para detalhes do orçamento e atualizar no retorno.
                     AppFeedback.show(
                       context,
                       'Função de detalhes ainda não implementada.',
@@ -182,7 +182,7 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  /// [uso] Renderiza a interface de lista vazia dentro de um scroll ativo para permitir o gesto de Pull-to-Refresh em toda a tela.
+  /// [uso]: Exibe a mensagem de lista vazia mantendo o gesto de Pull-to-Refresh habilitado.
   Widget _buildEmptyState() {
     return RefreshIndicator(
       onRefresh: _atualizarLista,

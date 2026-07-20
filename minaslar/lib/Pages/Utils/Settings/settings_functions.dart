@@ -1,9 +1,9 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../Errors/exceptions.dart';
-import '../../Features/Modelos/usuario_model.dart';
-import '../../Features/Repositorios/usuario_repository.dart';
+import '../../../Core/Errors/exceptions.dart';
+import '../../../Features/Modelos/usuario_model.dart';
+import '../../../Features/Repositorios/usuario_repository.dart';
 
-/// Modelo para agrupar os dados carregados para a tela de configurações.
+/// [uso]: Modelo container para agrupar os dados carregados na tela de configurações.
 class SettingsData {
   final Usuario currentUser;
   final List<Usuario> pendingUsers;
@@ -16,32 +16,28 @@ class SettingsData {
   });
 }
 
-/// Classe que encapsula a lógica de negócio da tela de configurações.
+/// [uso]: Concentra as regras de negócio, ordenação e chamadas de repositório da tela de configurações.
 class SettingsFunctions {
   final _usuarioRepository = UsuarioRepository();
   final _storage = const FlutterSecureStorage();
 
-  /// [Uso] Carrega as informações necessárias para a tela de configurações,
-  /// identificando o usuário logado e separando os demais entre ativos e pendentes.
+  /// [uso]: Carrega as informações do usuário atual e separa os demais usuários entre ativos e pendentes.
   Future<SettingsData> loadData({bool forceRefresh = true}) async {
-    // Busca todos os usuários do banco
     final allUsers = await _usuarioRepository.listarTodos(
       forcarAtualizacao: forceRefresh,
     );
 
-    // Valida se a tabela possui registros
     if (allUsers.isEmpty) {
       throw ValidationException("Nenhum usuário encontrado no banco de dados.");
     }
 
-    // Recupera as credenciais locais salvas no dispositivo
     final currentUserId = await _storage.read(key: 'id');
     final savedPhone = await _storage.read(key: 'telefone');
     final cleanPhoneSession = savedPhone?.replaceAll(RegExp(r'[^0-9]'), '');
 
     Usuario? currentUser;
     try {
-      // Encontra o usuário logado por ID ou Telefone exato
+      // Localiza o usuário logado via ID local ou telefone cadastrado
       currentUser = allUsers.firstWhere((u) {
         final dbIdStr = u.id.toString().trim();
         final sessionIdStr = currentUserId?.toString().trim();
@@ -57,28 +53,25 @@ class SettingsFunctions {
         return matchById || matchByPhone;
       });
     } catch (e) {
-      currentUser = null; // Usuário não localizado
+      currentUser = null;
     }
 
-    // Se as credenciais locais não baterem com nenhuma conta, desloga por segurança
+    // Exceção disparada caso as credenciais locais não correspondam a nenhum cadastro ativo
     if (currentUser == null) {
       throw const SessionDivergenceException();
     }
 
-    // Filtra os outros usuários ignorando a si mesmo
+    // Filtra os usuários excluindo o próprio perfil
     final otherUsers = allUsers.where((u) => u.id != currentUser!.id).toList();
 
-    // Filtra e ordena a lista de usuários autenticados:
-    // 1. Administradores primeiro.
-    // 2. Em seguida, por ordem alfabética de nome.
+    // Ordena usuários autenticados: administradores no topo, seguidos por ordem alfabética
     final authenticated = otherUsers.where((u) => u.autenticado).toList()
       ..sort((a, b) {
-        if (a.isAdmin && !b.isAdmin) return -1; // a (admin) vem antes de b
-        if (!a.isAdmin && b.isAdmin) return 1; // b (admin) vem antes de a
-        return a.nome.compareTo(b.nome); // critério de desempate
+        if (a.isAdmin && !b.isAdmin) return -1;
+        if (!a.isAdmin && b.isAdmin) return 1;
+        return a.nome.compareTo(b.nome);
       });
 
-    // Retorna os dados agrupados por status de autenticação
     return SettingsData(
       currentUser: currentUser,
       pendingUsers: otherUsers.where((u) => !u.autenticado).toList(),
@@ -86,41 +79,31 @@ class SettingsFunctions {
     );
   }
 
-  /// [Uso] Atualiza os dados cadastrais (nome e telefone) do usuário atual no banco de dados.
+  /// [uso]: Atualiza o nome e o telefone do usuário logado no repositório.
   Future<Usuario> saveProfile({
     required Usuario currentUser,
     required String newName,
     required String newPhone,
   }) async {
-    // Cria uma cópia alterada do modelo de usuário
     final updatedUser = currentUser.copyWith(nome: newName, telefone: newPhone);
-
-    // Envia a atualização para o repositório
     await _usuarioRepository.salvarUsuario(updatedUser);
     return updatedUser;
   }
 
-  /// [Uso] Encerra a sessão do usuário atual limpando os dados salvos localmente e os caches de memória.
+  /// [uso]: Limpa o armazenamento local do dispositivo e invalida o cache em memória do repositório.
   Future<void> logout() async {
-    // Apaga chaves locais (ID, Telefone, Senha) do aparelho
     await _storage.deleteAll();
-
-    // Limpa a memória volátil do repositório
     _usuarioRepository.invalidarCache();
   }
 
-  /// [Uso] Aprova um usuário pendente, alterando seu status para autenticado.
-  ///
-  /// Retorna o modelo do usuário atualizado em caso de sucesso.
+  /// [uso]: Aprova o cadastro de um usuário tornando-o autenticado no sistema.
   Future<Usuario> approveUser(Usuario userToApprove) async {
     final approvedUser = userToApprove.copyWith(autenticado: true);
     await _usuarioRepository.salvarUsuario(approvedUser);
     return approvedUser;
   }
 
-  /// [Uso] Revoga o acesso de um usuário, alterando seu status para não autenticado.
-  ///
-  /// Retorna o modelo do usuário atualizado em caso de sucesso.
+  /// [uso]: Revoga as permissões de um usuário, alterando seu status para não autenticado.
   Future<Usuario> revokeUserAccess(Usuario userToRevoke) async {
     final revokedUser = userToRevoke.copyWith(autenticado: false);
     await _usuarioRepository.salvarUsuario(revokedUser);

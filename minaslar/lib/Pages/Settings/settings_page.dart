@@ -4,20 +4,14 @@ import '../../Core/Errors/errors.dart';
 import '../../Core/Services/auth.dart';
 import '../../Core/Widgets/widgets.dart';
 import '../../Features/Modelos/usuario_model.dart';
-import '../../Core/Services/settings_functions.dart';
+import '../Utils/Settings/settings_functions.dart';
 import 'change_informations.dart';
 import 'user_confirmation.dart';
-import '../../Core/Widgets/Settings/pending_users_button.dart';
-import '../../Core/Widgets/Settings/profile_info_card.dart';
-import '../../Core/Widgets/Settings/settings_app_bar.dart';
-import '../../Core/Widgets/Settings/users_list_view.dart';
+import '../Utils/Settings/pending_users_button.dart';
+import '../Utils/Settings/settings_app_bar.dart';
+import '../Utils/Settings/settings_body.dart';
 
-/// [uso] Centraliza as configurações do perfil do usuário logado e a gestão
-/// da equipe de funcionários.
-///
-/// Permite que qualquer usuário edite suas informações básicas (nome e telefone).
-/// Se o usuário tiver privilégios administrativos ([isAdmin]), a tela também
-/// libera o gerenciamento de convites e aprovação de novos membros na equipe.
+/// [uso]: Centraliza as configurações do perfil do usuário e o gerenciamento de membros da equipe.
 class SettingsPage extends StatefulWidget {
   final bool isAdmin;
 
@@ -28,15 +22,13 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  /// Provedor de funções e lógica de negócios para as configurações.
   final _functions = SettingsFunctions();
 
-  /// Estado de carregamento e controle de exceções da interface.
+  // Controle de estado e exceções
   bool _isLoading = true;
-  bool _isNetworkError = false;
   String _errorMessage = '';
 
-  /// Dados de cache locais dos usuários e da sessão.
+  // Estado local dos usuários
   Usuario? _currentUser;
   List<Usuario> _pendingUsers = [];
   List<Usuario> _authenticatedUsers = [];
@@ -47,10 +39,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _loadData(forceRefresh: false);
   }
 
-  /// Busca os dados da equipe e sincroniza o estado do usuário atual.
-  ///
-  /// Caso identifique falhas de rede, isola o erro para evitar o logoff.
-  /// Em caso de divergência crítica de sessão, força a saída do sistema.
+  /// Carrega os dados da equipe e sincroniza a sessão do usuário atual
   Future<void> _loadData({bool forceRefresh = false}) async {
     if (mounted) {
       setState(() {
@@ -67,7 +56,6 @@ class _SettingsPageState extends State<SettingsPage> {
           _currentUser = data.currentUser;
           _pendingUsers = data.pendingUsers;
           _authenticatedUsers = data.authenticatedUsers;
-          _isNetworkError = false;
         });
       }
     } on SessionDivergenceException catch (e) {
@@ -82,7 +70,6 @@ class _SettingsPageState extends State<SettingsPage> {
     } on NetworkException catch (e) {
       if (mounted) {
         setState(() {
-          _isNetworkError = true;
           _errorMessage = ErrorHandler.mapearErro(e);
         });
         AppFeedback.show(context, _errorMessage, type: FeedbackType.error);
@@ -90,7 +77,6 @@ class _SettingsPageState extends State<SettingsPage> {
     } on SocketException catch (e) {
       if (mounted) {
         setState(() {
-          _isNetworkError = true;
           _errorMessage = ErrorHandler.mapearErro(e);
         });
         AppFeedback.show(context, _errorMessage, type: FeedbackType.error);
@@ -98,7 +84,6 @@ class _SettingsPageState extends State<SettingsPage> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _isNetworkError = false;
           _errorMessage = ErrorHandler.mapearErro(e);
         });
         AppFeedback.show(
@@ -112,7 +97,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  /// Salva as alterações de nome e telefone do usuário atual se houver modificações.
+  /// Salva as alterações cadastrais de nome e telefone do perfil
   Future<void> _saveProfile({
     required String newName,
     required String newPhone,
@@ -156,7 +141,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  /// Exibe o diálogo para edição do perfil do usuário.
+  /// Exibe o diálogo para edição das informações do perfil
   void _showEditProfileDialog() async {
     if (_currentUser == null) return;
 
@@ -173,7 +158,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  /// Exibe um diálogo de confirmação para revogar o acesso de um usuário.
+  /// Exibe a caixa de confirmação antes de revogar o acesso de um usuário
   void _showRevokeAccessDialog(Usuario userToRevoke) async {
     final bool? confirmed = await showDialog<bool>(
       context: context,
@@ -205,7 +190,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  /// Revoga o acesso de um usuário e atualiza as listas locais.
+  /// Revoga o acesso do usuário selecionado e reordena as listas locais
   Future<void> _revokeUserAccess(Usuario userToRevoke) async {
     setState(() => _isLoading = true);
     try {
@@ -234,7 +219,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  /// Exibe a caixa de diálogo com as solicitações de novos membros da equipe.
+  /// Exibe o diálogo para aprovação de solicitações pendentes
   void _showPendingUsersDialog() async {
     final Usuario? approvedUser = await showDialog(
       context: context,
@@ -264,7 +249,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  /// Encerra a sessão atual limpando o cache persistente e local.
+  /// Processa o logout e redireciona o fluxo para a tela de autenticação
   Future<void> _logout() async {
     setState(() => _isLoading = true);
     await _functions.logout();
@@ -291,50 +276,18 @@ class _SettingsPageState extends State<SettingsPage> {
               onPressed: _showPendingUsersDialog,
             )
           : null,
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: themeColor))
-          : _currentUser == null
-          ? AppErrorView(
-              message: _errorMessage.isNotEmpty
-                  ? _errorMessage
-                  : "Sessão divergente ou não localizada. Faça login novamente.",
-              buttonText: _isNetworkError
-                  ? "Tentar Novamente"
-                  : "Ir para o Login",
-              onTryAgain: _isNetworkError
-                  ? () => _loadData(forceRefresh: false)
-                  : _logout,
-            )
-          : RefreshIndicator(
-              onRefresh: () => _loadData(forceRefresh: true),
-              color: themeColor,
-              backgroundColor: AppColors.cardBackground,
-              child: ListView(
-                padding: const EdgeInsets.all(AppDimensions.spaceLarge),
-                children: [
-                  ProfileInfoCard(
-                    currentUser: _currentUser!,
-                    onEdit: _showEditProfileDialog,
-                    themeColor: themeColor,
-                  ),
-                  const SizedBox(height: AppDimensions.spaceXLarge),
-                  AppSectionHeader(
-                    icon: AppIcons.equipeSection,
-                    title: 'EQUIPE AUTENTICADA',
-                    count: _authenticatedUsers.length,
-                    countLabel: _authenticatedUsers.length == 1
-                        ? 'usuário'
-                        : 'usuários',
-                  ),
-                  UsersListView(
-                    users: _authenticatedUsers,
-                    onUserLongPress: widget.isAdmin
-                        ? _showRevokeAccessDialog
-                        : null,
-                  ),
-                ],
-              ),
-            ),
+      body: SettingsBody(
+        isLoading: _isLoading,
+        currentUser: _currentUser,
+        authenticatedUsers: _authenticatedUsers,
+        errorMessage: _errorMessage,
+        isAdmin: widget.isAdmin,
+        themeColor: themeColor,
+        onRefresh: () => _loadData(forceRefresh: true),
+        onTryAgain: () => _loadData(forceRefresh: false),
+        onEditProfile: _showEditProfileDialog,
+        onUserLongPress: _showRevokeAccessDialog,
+      ),
     );
   }
 }

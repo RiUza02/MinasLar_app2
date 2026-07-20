@@ -4,7 +4,7 @@ import '../../../core/Design/design_system.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../core/errors/errors.dart';
 import 'criar_conta.dart';
-import '../HomePage/homepage.dart';
+import '../HomePage/home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -83,7 +83,7 @@ class _LoginPageState extends State<LoginPage> {
       // 3. Limpa a pilha de telas e abre a aplicação principal
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
-          builder: (context) => Overview(
+          builder: (context) => HomePage(
             nomeUsuario: dadosUsuario['nome'],
             isAdmin: dadosUsuario['is_admin'],
           ),

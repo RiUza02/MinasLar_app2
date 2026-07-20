@@ -1,7 +1,7 @@
 import '../../../Core/Design/design_system.dart';
 import '../../../Core/Services/communication.dart';
-import '../../Design/borders.dart';
-import '../widgets.dart';
+import '../../../Core/Design/borders.dart';
+import '../../../Core/Widgets/widgets.dart';
 
 /// [uso] Card para exibição de um orçamento na HomePage com destaque para Urgências.
 class OrcamentoCard extends StatelessWidget {
@@ -16,15 +16,22 @@ class OrcamentoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Extração e tratamento preventivo de dados nulos da API.
-    final cliente = orcamento['clientes'] ?? {};
-    final nomeCliente = cliente['nome'] ?? 'Cliente';
-    final telefone = cliente['telefone'] ?? '';
-    final rua = cliente['rua'] ?? '';
-    final numero = cliente['numero'] ?? 'S/N';
-    final apartamento = cliente['apartamento'] ?? '';
-    final bairro = cliente['bairro'] ?? '';
-    final tituloServico = orcamento['titulo'] ?? '';
+    // como um Map (objeto único) ou uma List (array de objetos).
+    final rawCliente = orcamento['clientes'];
+    final Map<String, dynamic> cliente = rawCliente is List
+        ? (rawCliente.isNotEmpty
+              ? rawCliente.first as Map<String, dynamic>
+              : {})
+        : (rawCliente as Map<String, dynamic>? ?? {});
+
+    // para evitar que números (como int do PostgreSQL) quebrem as telas ou funções de Launcher.
+    final nomeCliente = (cliente['nome'] ?? 'Cliente').toString();
+    final telefone = (cliente['telefone'] ?? '').toString();
+    final rua = (cliente['rua'] ?? '').toString();
+    final numero = (cliente['numero'] ?? 'S/N').toString();
+    final apartamento = (cliente['apartamento'] ?? '').toString();
+    final bairro = (cliente['bairro'] ?? '').toString();
+    final tituloServico = (orcamento['titulo'] ?? '').toString();
 
     // Como a coluna eh_urgente é BOOLEAN NOT NULL no Postgres, extraímos direto com fallback seguro.
     final bool isUrgente = orcamento['eh_urgente'] == true;
@@ -237,6 +244,7 @@ class OrcamentoCard extends StatelessWidget {
               ),
               if (rua.isNotEmpty)
                 Text(
+                  // Interpolação segura de strings geradas no build
                   '$rua, $numero',
                   style: AppTextStyles.bodyMedium.copyWith(
                     fontWeight: FontWeight.w600,

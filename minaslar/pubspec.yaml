@@ -36,6 +36,7 @@ dependencies:
   # Permite a integração com o Google Maps, exibindo mapas interativos e marcadores de localização.
   geocoding: ^5.0.0
   geolocator: ^14.0.3
+  intl: ^0.20.3
 
 flutter_launcher_icons:
   android: "launcher_icon"

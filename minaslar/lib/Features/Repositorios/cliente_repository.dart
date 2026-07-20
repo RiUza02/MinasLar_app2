@@ -90,4 +90,68 @@ class ClienteRepository {
           .toList();
     }
   }
+
+  /// Busca um cliente único por seu ID, com fallback para consulta sem JOIN.
+  Future<Map<String, dynamic>?> buscarClientePorId(String id) async {
+    try {
+      // Tenta buscar mantendo o padrão com JOIN do último orçamento
+      final response = await _supabase
+          .from('clientes')
+          .select('*, orcamentos!ultimo_orcamento_id(data_pega)')
+          .eq('id', id)
+          .maybeSingle();
+      return response;
+    } catch (_) {
+      // Fallback caso a relação/tabela orcamentos ainda não exista
+      final response = await _supabase
+          .from('clientes')
+          .select()
+          .eq('id', id)
+          .maybeSingle();
+      return response;
+    }
+  }
+
+  /// Exclui um cliente do banco de dados pelo seu ID.
+  Future<void> excluirCliente(String id) async {
+    await _supabase.from('clientes').delete().eq('id', id);
+  }
+
+  /// Verifica no banco se já existe um cliente com nome e endereço semelhantes.
+  Future<Cliente?> verificarDuplicado({
+    required String nome,
+    required String rua,
+    required String numero,
+  }) async {
+    try {
+      final response = await _supabase
+          .from('clientes')
+          .select()
+          .ilike('nome', '%${nome.trim()}%')
+          .ilike('rua', '%${rua.trim()}%')
+          .eq('numero', numero.trim())
+          .limit(1)
+          .maybeSingle();
+
+      if (response != null) {
+        return Cliente.fromMap(response);
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Insere um novo cliente no banco de dados.
+  Future<void> salvarCliente(Cliente cliente) async {
+    await _supabase.from('clientes').insert(cliente.toMap());
+  }
+
+  /// Atualiza os dados de um cliente existente no banco de dados.
+  Future<void> atualizarCliente(
+    String id,
+    Map<String, dynamic> dadosAtualizados,
+  ) async {
+    await _supabase.from('clientes').update(dadosAtualizados).eq('id', id);
+  }
 }

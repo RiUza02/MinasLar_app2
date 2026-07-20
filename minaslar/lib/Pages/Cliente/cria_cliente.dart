@@ -1,12 +1,15 @@
-import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../Core/Design/design_system.dart';
 import '../../Core/Errors/errors.dart';
 import '../../Core/Utils/formatters.dart';
+import '../../Core/Utils/string_extensions.dart';
 import '../../Core/Widgets/widgets.dart';
+import '../Utils/Cliente/cliente_import_parser.dart';
+import '../Utils/Cliente/cliente_duplicado_dialog.dart';
+import '../Utils/Cliente/cliente_import_dialog.dart';
+import '../Utils/Cliente/tipo_pessoa_selector.dart';
 import '../../Features/Modelos/cliente_model.dart';
+import '../../Features/Repositorios/cliente_repository.dart';
 
-/// Página para cadastro de novos clientes, com validações e checagem de duplicidade.
 class AdicionarClientePage extends StatefulWidget {
   const AdicionarClientePage({super.key});
 
@@ -16,6 +19,7 @@ class AdicionarClientePage extends StatefulWidget {
 
 class _AdicionarClientePageState extends State<AdicionarClientePage> {
   final _formKey = GlobalKey<FormState>();
+  final _clienteRepository = ClienteRepository();
   bool _isLoading = false;
 
   // Controladores
@@ -47,19 +51,6 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
     super.dispose();
   }
 
-  /// Formata um texto para o padrão "Title Case".
-  String _formatarTexto(String texto) {
-    if (texto.trim().isEmpty) return "";
-    return texto
-        .trim()
-        .split(RegExp(r'\s+'))
-        .map((palavra) {
-          if (palavra.isEmpty) return "";
-          return "${palavra[0].toUpperCase()}${palavra.substring(1).toLowerCase()}";
-        })
-        .join(' ');
-  }
-
   /// Inicia o fluxo de salvamento, validando o formulário e checando duplicidade.
   Future<void> _salvarCliente() async {
     if (!_formKey.currentState!.validate()) {
@@ -67,7 +58,7 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
     }
     setState(() => _isLoading = true);
 
-    final clienteEncontrado = await _verificarClienteDuplicado(
+    final clienteEncontrado = await _clienteRepository.verificarDuplicado(
       nome: _nomeController.text,
       rua: _ruaController.text,
       numero: _numeroController.text,
@@ -76,7 +67,7 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
     if (mounted) {
       if (clienteEncontrado != null) {
         setState(() => _isLoading = false);
-        _mostrarDialogoClienteDuplicado(clienteEncontrado);
+        _handleClienteDuplicado(clienteEncontrado);
       } else {
         await _criarNovoCliente();
       }
@@ -84,41 +75,17 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
   }
 
   /// Verifica no banco se já existe um cliente com dados parecidos.
-  Future<Cliente?> _verificarClienteDuplicado({
-    required String nome,
-    required String rua,
-    required String numero,
-  }) async {
-    try {
-      final response = await Supabase.instance.client
-          .from('clientes')
-          .select()
-          .ilike('nome', '%${nome.trim()}%')
-          .ilike('rua', '%${rua.trim()}%')
-          .eq('numero', numero.trim())
-          .limit(1);
-
-      if (response.isNotEmpty) {
-        return Cliente.fromMap(response.first);
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  /// Insere o novo cliente no banco de dados.
   Future<void> _criarNovoCliente() async {
     if (mounted) setState(() => _isLoading = true);
     try {
       final novoCliente = Cliente(
-        nome: _formatarTexto(_nomeController.text),
-        rua: _formatarTexto(_ruaController.text),
+        nome: _nomeController.text.toTitleCase(),
+        rua: _ruaController.text.toTitleCase(),
         numero: _numeroController.text.trim(),
         complemento: _complementoController.text.trim().isEmpty
             ? null
-            : _formatarTexto(_complementoController.text),
-        bairro: _formatarTexto(_bairroController.text),
+            : _complementoController.text.toTitleCase(),
+        bairro: _bairroController.text.toTitleCase(),
         telefone: AppFormatters.telefone.unmaskText(_telefoneController.text),
         cpf: _isPessoaFisica && _cpfController.text.isNotEmpty
             ? AppFormatters.cpf.unmaskText(_cpfController.text)
@@ -132,9 +99,7 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
         clienteProblematico: _isProblematico,
       );
 
-      await Supabase.instance.client
-          .from('clientes')
-          .insert(novoCliente.toMap());
+      await _clienteRepository.salvarCliente(novoCliente);
 
       if (mounted) {
         AppFeedback.show(
@@ -158,209 +123,65 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
   }
 
   /// Abre um modal para importação de dados via texto.
-  void _mostrarModalImportacao() {
-    final importarController = TextEditingController();
-
-    showDialog(
+  Future<void> _mostrarModalImportacao() async {
+    final String? textoImportado = await showDialog<String>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: AppColors.cardBackground,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
-          ),
-          title: const Row(
-            children: [
-              Icon(Icons.paste, color: AppColors.primaryAlternative),
-              SizedBox(width: AppDimensions.spaceSmall),
-              Text("Importar Dados"),
-            ],
-          ),
-          titleTextStyle: AppTextStyles.titleMedium,
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Cole o texto abaixo na seguinte ordem:\n1. Nome\n2. Telefone\n3. Rua\n4. Número\n5. Bairro",
-                  style: AppTextStyles.bodyMediumSecondary.copyWith(
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: AppDimensions.spaceMedium),
-                TextField(
-                  controller: importarController,
-                  maxLines: 8,
-                  style: AppTextStyles.bodyMedium,
-                  decoration: InputDecoration(
-                    hintText: "Cole o texto aqui...",
-                    filled: true,
-                    fillColor: AppColors.inputBackground,
-                    hintStyle: AppTextStyles.inputHint,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.radiusMedium,
-                      ),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancelar"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                _processarTextoImportado(importarController.text);
-                Navigator.pop(context);
-              },
-              child: const Text("Preencher Campos"),
-            ),
-          ],
-        );
-      },
+      builder: (context) => const ClienteImportDialog(),
     );
+
+    if (textoImportado != null) {
+      _processarTextoImportado(textoImportado);
+    }
   }
 
   /// Processa o texto colado e preenche os campos do formulário.
   void _processarTextoImportado(String texto) {
-    if (texto.trim().isEmpty) return;
+    try {
+      final parser = ClienteImportParser();
+      final data = parser.parse(texto);
 
-    // Filtra linhas vazias para evitar deslocamento dos índices
-    List<String> linhas = texto
-        .split('\n')
-        .map((l) => l.trim())
-        .where((l) => l.isNotEmpty)
-        .toList();
+      setState(() {
+        if (data.nome != null) _nomeController.text = data.nome!;
+        if (data.telefone != null) {
+          _telefoneController.text = AppFormatters.telefone.maskText(
+            data.telefone!,
+          );
+        }
+        if (data.rua != null) _ruaController.text = data.rua!;
+        if (data.numero != null) _numeroController.text = data.numero!;
+        if (data.bairro != null) _bairroController.text = data.bairro!;
+      });
 
-    if (linhas.length > 1) {
-      bool temLetras = RegExp(r'[a-zA-Z]').hasMatch(linhas[1]);
-      if (temLetras) {
-        AppFeedback.show(
-          context,
-          "Erro: A 2ª linha (Telefone) contém letras. Corrija para apenas números.",
-          type: FeedbackType.error,
-        );
-        return;
-      }
+      AppFeedback.show(
+        context,
+        "Dados importados com sucesso!",
+        type: FeedbackType.success,
+      );
+    } on ValidationException catch (e) {
+      AppFeedback.show(context, e.message, type: FeedbackType.error);
     }
-
-    setState(() {
-      if (linhas.isNotEmpty) _nomeController.text = linhas[0];
-      if (linhas.length > 1) {
-        String telLimpo = linhas[1].replaceAll(RegExp(r'[^0-9]'), '');
-        _telefoneController.text = AppFormatters.telefone.maskText(telLimpo);
-      }
-      if (linhas.length > 2) _ruaController.text = linhas[2];
-      if (linhas.length > 3) _numeroController.text = linhas[3];
-      if (linhas.length > 4) _bairroController.text = linhas[4];
-    });
-
-    AppFeedback.show(
-      context,
-      "Dados importados com sucesso!",
-      type: FeedbackType.success,
-    );
   }
 
   /// Mostra um diálogo de confirmação quando um cliente parecido é encontrado.
-  void _mostrarDialogoClienteDuplicado(Cliente clienteEncontrado) {
-    showDialog(
+  Future<void> _handleClienteDuplicado(Cliente clienteEncontrado) async {
+    final action = await showDialog<ClienteDuplicadoAction>(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: AppColors.cardBackground,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
-          ),
-          title: const Row(
-            children: [
-              Icon(Icons.people_alt_outlined, color: Colors.amber),
-              SizedBox(width: AppDimensions.spaceSmall),
-              Text("Cliente Parecido Encontrado"),
-            ],
-          ),
-          titleTextStyle: AppTextStyles.titleMedium,
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Encontramos um cliente com nome e endereço semelhantes:",
-                  style: AppTextStyles.bodyMediumSecondary,
-                ),
-                const SizedBox(height: AppDimensions.spaceLarge),
-                Container(
-                  padding: const EdgeInsets.all(AppDimensions.spaceMedium),
-                  decoration: BoxDecoration(
-                    color: AppColors.inputBackground,
-                    borderRadius: BorderRadius.circular(
-                      AppDimensions.radiusMedium,
-                    ),
-                    border: Border.all(color: AppColors.borderLight),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        clienteEncontrado.nome,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: AppDimensions.spaceXSmall),
-                      Text(
-                        "${clienteEncontrado.rua}, ${clienteEncontrado.numero} - ${clienteEncontrado.bairro}",
-                        style: AppTextStyles.bodyMediumSecondary,
-                      ),
-                      const SizedBox(height: AppDimensions.spaceXSmall),
-                      Text(
-                        AppFormatters.telefone.maskText(
-                          clienteEncontrado.telefone,
-                        ),
-                        style: AppTextStyles.bodyMediumSecondary,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppDimensions.spaceLarge),
-                Text(
-                  "O que você deseja fazer?",
-                  style: AppTextStyles.bodyMediumSecondary,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancelar"),
-            ),
-            OutlinedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _criarNovoCliente();
-              },
-              child: const Text("Criar Mesmo Assim"),
-            ),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              icon: const Icon(Icons.add_comment),
-              label: const Text("Criar Orçamento"),
-            ),
-          ],
-        );
-      },
+      builder: (context) =>
+          ClienteDuplicadoDialog(clienteEncontrado: clienteEncontrado),
     );
+
+    switch (action) {
+      case ClienteDuplicadoAction.criarMesmoAssim:
+        await _criarNovoCliente();
+        break;
+      case ClienteDuplicadoAction.criarOrcamento:
+        // TODO: Implementar navegação para Adicionar Orçamento
+        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => AdicionarOrcamentoPage(cliente: clienteEncontrado)));
+        break;
+      default:
+        break;
+    }
   }
 
   @override
@@ -458,29 +279,9 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
                 titulo: 'DOCUMENTAÇÃO (OPCIONAL)',
                 icone: Icons.badge_outlined,
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.inputBackground,
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.radiusMedium,
-                      ),
-                      border: Border.all(color: AppColors.borderLight),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _buildRadioButton("Pessoa Física", true),
-                        ),
-                        Container(
-                          width: 1,
-                          height: 40,
-                          color: AppColors.borderLight,
-                        ),
-                        Expanded(
-                          child: _buildRadioButton("Pessoa Jurídica", false),
-                        ),
-                      ],
-                    ),
+                  TipoPessoaSelector(
+                    isPessoaFisica: _isPessoaFisica,
+                    onChanged: (isPf) => setState(() => _isPessoaFisica = isPf),
                   ),
                   const SizedBox(height: AppDimensions.spaceLarge),
                   AnimatedCrossFade(
@@ -519,7 +320,7 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
                 icone: Icons.info_outline,
                 children: [
                   SwitchListTile(
-                    activeColor: AppColors.error,
+                    activeThumbColor: AppColors.error,
                     contentPadding: EdgeInsets.zero,
                     title: const Text(
                       "Cliente Problemático?",
@@ -557,31 +358,6 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
                     : const Text("CADASTRAR CLIENTE"),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Constrói o botão de rádio para seleção de tipo de pessoa.
-  Widget _buildRadioButton(String title, bool value) {
-    final isSelected = _isPessoaFisica == value;
-    return InkWell(
-      onTap: () => setState(() => _isPessoaFisica = value),
-      borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: AppDimensions.spaceMedium,
-        ),
-        child: Center(
-          child: Text(
-            title,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: isSelected
-                  ? AppColors.primaryAlternative
-                  : AppColors.textDisabled,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            ),
           ),
         ),
       ),

@@ -104,4 +104,16 @@ class OrcamentoRepository {
 
     return List<Map<String, dynamic>>.from(response);
   }
+
+  /// Busca o histórico de orçamentos de um cliente específico.
+  Future<List<Map<String, dynamic>>> buscarHistoricoPorCliente(
+    String clienteId,
+  ) async {
+    final response = await _supabase
+        .from('orcamentos')
+        .select()
+        .eq('cliente_id', clienteId)
+        .order('data_pega', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
 }

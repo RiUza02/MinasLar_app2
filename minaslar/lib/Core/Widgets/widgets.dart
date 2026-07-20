@@ -1,5 +1,6 @@
 // Arquivo facilitador de importações para o resto do projeto.
 export 'card_container.dart';
+export '../../Pages/Utils/Cliente/app_info_row.dart';
 export 'empty_list_indicator.dart';
 export 'error_popup.dart';
 export 'error_view.dart';

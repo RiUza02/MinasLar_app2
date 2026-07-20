@@ -1,12 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 import '../../Core/Design/design_system.dart';
 import '../../Core/Errors/errors.dart';
 import '../../Core/Utils/formatters.dart';
+import '../../Core/Utils/string_extensions.dart';
 import '../../Core/Widgets/widgets.dart';
 import '../../Features/Modelos/cliente_model.dart';
+import '../../Features/Repositorios/cliente_repository.dart';
+import '../Utils/Cliente/tipo_pessoa_selector.dart';
 
 class EditarClientePage extends StatefulWidget {
   final Cliente cliente;
@@ -19,6 +18,7 @@ class EditarClientePage extends StatefulWidget {
 
 class _EditarClientePageState extends State<EditarClientePage> {
   final _formKey = GlobalKey<FormState>();
+  final _clienteRepository = ClienteRepository();
   bool _isLoading = false;
 
   // Controladores
@@ -83,34 +83,20 @@ class _EditarClientePageState extends State<EditarClientePage> {
     super.dispose();
   }
 
-  String _formatarTexto(String texto) {
-    if (texto.trim().isEmpty) return "";
-    return texto
-        .trim()
-        .split(RegExp(r'\s+')) // Corta múltiplos espaços seguidos em segurança
-        .map((palavra) {
-          if (palavra.isEmpty) return "";
-          if (palavra.length == 1) return palavra.toUpperCase();
-          return "${palavra[0].toUpperCase()}${palavra.substring(1).toLowerCase()}";
-        })
-        .join(' ');
-  }
-
   Future<void> _salvarAlteracoes() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
-      // 1. Prepara o mapa limpo, sem o ID, para atualizar exatamente o que mudou
       final dadosAtualizados = {
-        'nome': _formatarTexto(_nomeController.text),
-        'rua': _formatarTexto(_ruaController.text),
+        'nome': _nomeController.text.toTitleCase(),
+        'rua': _ruaController.text.toTitleCase(),
         'numero': _numeroController.text.trim(),
         'complemento': _complementoController.text.trim().isEmpty
             ? null
-            : _formatarTexto(_complementoController.text),
-        'bairro': _formatarTexto(_bairroController.text),
+            : _complementoController.text.toTitleCase(),
+        'bairro': _bairroController.text.toTitleCase(),
         'telefone': AppFormatters.telefone.unmaskText(_telefoneController.text),
         'cpf': _isPessoaFisica && _cpfController.text.isNotEmpty
             ? AppFormatters.cpf.unmaskText(_cpfController.text)
@@ -124,12 +110,10 @@ class _EditarClientePageState extends State<EditarClientePage> {
         'cliente_problematico': _isProblematico,
       };
 
-      // 2. CORREÇÃO CRÍTICA: Executa o update sem chamar .select() no final.
-      // Isso impede o erro no servidor do Supabase ao processar o JOIN relacional.
-      await Supabase.instance.client
-          .from('clientes')
-          .update(dadosAtualizados)
-          .eq('id', widget.cliente.id!);
+      await _clienteRepository.atualizarCliente(
+        widget.cliente.id!,
+        dadosAtualizados,
+      );
 
       if (mounted) {
         AppFeedback.show(
@@ -138,7 +122,6 @@ class _EditarClientePageState extends State<EditarClientePage> {
           type: FeedbackType.success,
         );
 
-        // 3. Usa o método copyWith do modelo para atualizar a UI localmente e com precisão
         final clienteAtualizado = widget.cliente.copyWith(
           nome: dadosAtualizados['nome'] as String,
           rua: dadosAtualizados['rua'] as String,
@@ -152,7 +135,6 @@ class _EditarClientePageState extends State<EditarClientePage> {
           clienteProblematico: dadosAtualizados['cliente_problematico'] as bool,
         );
 
-        // Devolve o objeto atualizado para a DetalhesClientePage recarregar a tela em tempo real
         Navigator.pop(context, clienteAtualizado);
       }
     } catch (e) {
@@ -250,29 +232,18 @@ class _EditarClientePageState extends State<EditarClientePage> {
                 titulo: 'DOCUMENTAÇÃO (OPCIONAL)',
                 icone: Icons.badge_outlined,
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.inputBackground,
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.radiusMedium,
-                      ),
-                      border: Border.all(color: AppColors.borderLight),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _buildRadioButton("Pessoa Física", true),
-                        ),
-                        Container(
-                          width: 1,
-                          height: 40,
-                          color: AppColors.borderLight,
-                        ),
-                        Expanded(
-                          child: _buildRadioButton("Pessoa Jurídica", false),
-                        ),
-                      ],
-                    ),
+                  TipoPessoaSelector(
+                    isPessoaFisica: _isPessoaFisica,
+                    onChanged: (isPf) {
+                      setState(() {
+                        _isPessoaFisica = isPf;
+                        if (isPf) {
+                          _cnpjController.clear();
+                        } else {
+                          _cpfController.clear();
+                        }
+                      });
+                    },
                   ),
                   const SizedBox(height: AppDimensions.spaceLarge),
                   AnimatedCrossFade(
@@ -311,7 +282,7 @@ class _EditarClientePageState extends State<EditarClientePage> {
                 icone: Icons.info_outline,
                 children: [
                   SwitchListTile(
-                    activeColor: AppColors.error,
+                    activeThumbColor: AppColors.error,
                     contentPadding: EdgeInsets.zero,
                     title: const Text(
                       "Cliente Problemático?",
@@ -349,38 +320,6 @@ class _EditarClientePageState extends State<EditarClientePage> {
                     : const Text("SALVAR ALTERAÇÕES"),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRadioButton(String title, bool value) {
-    final isSelected = _isPessoaFisica == value;
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _isPessoaFisica = value;
-          // Limpa o campo que não será usado
-          if (value) {
-            _cnpjController.clear();
-          } else {
-            _cpfController.clear();
-          }
-        });
-      },
-      borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: AppDimensions.spaceMedium,
-        ),
-        child: Center(
-          child: Text(
-            title,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: isSelected ? AppColors.primary : AppColors.textDisabled,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            ),
           ),
         ),
       ),

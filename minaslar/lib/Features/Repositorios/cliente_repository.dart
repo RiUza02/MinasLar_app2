@@ -16,32 +16,7 @@ class ClienteRepository {
   }) async {
     final offset = (page - 1) * pageSize;
 
-    // Busca clientes e inclui a data do orçamento via JOIN relacional
-    dynamic query = _supabase
-        .from('clientes')
-        .select('*, orcamentos!ultimo_orcamento_id(data_pega)');
-
-    // Aplica filtro multicampos (Nome, Rua, Bairro e Telefone)
-    if (termo.trim().isNotEmpty) {
-      final termosDeBusca = termo
-          .split(',')
-          .map((t) => t.trim())
-          .where((t) => t.isNotEmpty);
-
-      for (final termoIndividual in termosDeBusca) {
-        final termoNumerico = termoIndividual.replaceAll(RegExp(r'[^0-9]'), '');
-        String filtroOr =
-            'nome.ilike.%$termoIndividual%,rua.ilike.%$termoIndividual%,bairro.ilike.%$termoIndividual%';
-
-        // Inclui busca por telefone apenas se houver números no termo
-        if (termoNumerico.isNotEmpty) {
-          filtroOr += ',telefone.ilike.%$termoNumerico%';
-        }
-        query = query.or(filtroOr);
-      }
-    }
-
-    // Mapeia a coluna do banco de dados para ordenação
+    // 1. Mapeia a coluna de ordenação desejada
     String dbColumn;
     switch (sortColumn) {
       case ClienteSortColumn.nome:
@@ -54,17 +29,65 @@ class ClienteRepository {
         dbColumn = 'bairro';
         break;
       case ClienteSortColumn.ultimoAtendimento:
-        // Ordena pela data do orçamento na tabela vinculada pelo JOIN
         dbColumn = 'orcamentos(data_pega)';
         break;
     }
 
-    // Executa a consulta aplicando a ordenação e os limites de página
-    final response = await query
-        .order(dbColumn, ascending: ascending)
-        .range(offset, offset + pageSize - 1);
+    // 2. Monta a string de filtro multicampos (se houver termo de busca)
+    String? filtroQuery;
+    if (termo.trim().isNotEmpty) {
+      final termosDeBusca = termo
+          .split(',')
+          .map((t) => t.trim())
+          .where((t) => t.isNotEmpty);
 
-    // Mapeia a resposta em objetos Cliente
-    return (response as List).map((map) => Cliente.fromMap(map)).toList();
+      for (final termoIndividual in termosDeBusca) {
+        final termoNumerico = termoIndividual.replaceAll(RegExp(r'[^0-9]'), '');
+        String filtroAtual =
+            'nome.ilike.%$termoIndividual%,rua.ilike.%$termoIndividual%,bairro.ilike.%$termoIndividual%';
+
+        if (termoNumerico.isNotEmpty) {
+          filtroAtual += ',telefone.ilike.%$termoNumerico%';
+        }
+        filtroQuery = filtroQuery == null
+            ? filtroAtual
+            : '$filtroQuery,$filtroAtual';
+      }
+    }
+
+    try {
+      // TENTATIVA PRINCIPAL: Busca clientes fazendo JOIN com a tabela de orçamentos
+      dynamic query = _supabase
+          .from('clientes')
+          .select('*, orcamentos!ultimo_orcamento_id(data_pega)');
+
+      if (filtroQuery != null) query = query.or(filtroQuery);
+
+      final response = await query
+          .order(dbColumn, ascending: ascending)
+          .range(offset, offset + pageSize - 1);
+
+      return (response as List).map((map) => Cliente.fromMap(map)).toList();
+    } catch (_) {
+      // FALLBACK DEFENSIVO: Se a tabela orcamentos não existir ou a relação falhar,
+      // busca apenas na tabela clientes para que a lista continue aparecendo normalmente.
+      dynamic queryFallback = _supabase.from('clientes').select();
+
+      if (filtroQuery != null) queryFallback = queryFallback.or(filtroQuery);
+
+      // Se a ordenação era por atendimento (que depende da tabela orcamentos),
+      // mudamos a ordenação para 'criado_em' ou 'nome' para evitar erro no banco.
+      final colunaSegura = (sortColumn == ClienteSortColumn.ultimoAtendimento)
+          ? 'criado_em'
+          : dbColumn;
+
+      final responseFallback = await queryFallback
+          .order(colunaSegura, ascending: ascending)
+          .range(offset, offset + pageSize - 1);
+
+      return (responseFallback as List)
+          .map((map) => Cliente.fromMap(map))
+          .toList();
+    }
   }
 }

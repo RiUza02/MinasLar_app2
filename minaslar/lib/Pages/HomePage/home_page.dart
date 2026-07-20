@@ -92,8 +92,8 @@ class _HomePageState extends State<HomePage> {
         case 'Home':
           return OverView(isAdmin: widget.isAdmin);
         case 'Clientes':
-          // Redireciona a aba Clientes para a página importada
-          return const ListaClientePage();
+          // Redireciona a aba Clientes para a página com o status de admin
+          return ListaClientePage(isAdmin: widget.isAdmin);
         default:
           return _placeholder(item.label!);
       }

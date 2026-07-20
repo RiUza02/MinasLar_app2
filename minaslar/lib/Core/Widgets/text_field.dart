@@ -42,6 +42,9 @@ class AppTextField extends StatelessWidget {
   /// Evento executado no momento em que o usuário confirma a ação final no teclado.
   final void Function(String)? onFieldSubmitted;
 
+  /// Número de linhas que o campo de texto pode ter. O padrão é 1.
+  final int maxLines;
+
   const AppTextField({
     super.key,
     required this.controller,
@@ -56,6 +59,7 @@ class AppTextField extends StatelessWidget {
     this.hintText,
     this.textInputAction,
     this.onFieldSubmitted,
+    this.maxLines = 1,
   });
 
   @override
@@ -69,6 +73,7 @@ class AppTextField extends StatelessWidget {
       validator: validator,
       textInputAction: textInputAction,
       onFieldSubmitted: onFieldSubmitted,
+      maxLines: maxLines,
       // Aplica a tipografia padrão para os dados inseridos pelo usuário
       style: AppTextStyles.bodyMedium,
       decoration: InputDecoration(

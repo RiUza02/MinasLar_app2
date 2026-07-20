@@ -73,7 +73,14 @@ class _ChangeInformationsDialogState extends State<ChangeInformationsDialog> {
               icon: AppIcons.telefone,
               keyboardType: TextInputType.phone,
               inputFormatters: [AppFormatters.telefone],
-              validator: (v) => v!.length < 15 ? 'Telefone incompleto' : null,
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Informe o telefone';
+                final unmasked = AppFormatters.telefone.unmaskText(v);
+                if (unmasked.length != 10 && unmasked.length != 11) {
+                  return 'O telefone deve ter 10 ou 11 dígitos.';
+                }
+                return null;
+              },
             ),
           ],
         ),

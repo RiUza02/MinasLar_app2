@@ -93,7 +93,8 @@ class OrcamentoRepository {
     final response = await _supabase
         .from('orcamentos')
         .select(
-          '*, clientes!cliente_id(nome, telefone, bairro, rua, numero, apartamento)',
+          // CORRIGIDO: substituído 'apartamento' por 'complemento'
+          '*, clientes!cliente_id(nome, telefone, bairro, rua, numero, complemento)',
         )
         .eq('entregue', false)
         .or('and($filtroEntrada),and($filtroEntrega)')

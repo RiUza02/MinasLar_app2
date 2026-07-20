@@ -4,32 +4,17 @@ import '../../Core/Widgets/widgets.dart';
 import '../../Core/Errors/errors.dart';
 import '../../Features/Modelos/cliente_model.dart';
 import '../../Features/Repositorios/cliente_repository.dart';
+import '../Cliente/cria_cliente.dart';
+import '../Cliente/detalha_cliente.dart';
 import '../Utils/ListaCliente/cliente_list_header.dart';
-
-/// Tela de detalhes do cliente selecionado.
-class DetalhesClientePage extends StatelessWidget {
-  final Cliente cliente;
-  const DetalhesClientePage({super.key, required this.cliente});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(cliente.nome),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.textPrimary,
-      ),
-      body: Center(child: Text('Detalhes para ${cliente.nome}')),
-    );
-  }
-}
 
 /// Colunas disponíveis para ordenação da lista.
 enum ClienteSortColumn { ultimoAtendimento, nome, rua, bairro }
 
 /// Tela principal de listagem paginada e busca de clientes.
 class ListaClientePage extends StatefulWidget {
-  const ListaClientePage({super.key});
+  final bool isAdmin;
+  const ListaClientePage({super.key, required this.isAdmin});
 
   @override
   State<ListaClientePage> createState() => _ListaClientePageState();
@@ -171,26 +156,30 @@ class _ListaClientePageState extends State<ListaClientePage> {
     _resetAndLoad();
   }
 
-  /// [uso]: Abre a tela ou modal de criação de um novo cliente.
-  void _abrirNovoCliente() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Cadastro de cliente ainda não implementado.'),
-      ),
+  /// [uso]: Abre a tela de criação de um novo cliente e atualiza a lista se um cliente for adicionado.
+  Future<void> _abrirNovoCliente() async {
+    final bool? clienteAdicionado = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AdicionarClientePage()),
     );
+    if (clienteAdicionado == true && mounted) {
+      _resetAndLoad();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'btnAddCliente',
-        onPressed: _abrirNovoCliente,
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.textPrimary,
-        child: const Icon(AppIcons.add),
-      ),
+      floatingActionButton: widget.isAdmin
+          ? FloatingActionButton(
+              heroTag: 'btnAddCliente',
+              onPressed: _abrirNovoCliente,
+              backgroundColor: AppColors.primaryAlternative,
+              foregroundColor: AppColors.textPrimary,
+              child: const Icon(AppIcons.add),
+            )
+          : null,
       body: Column(
         children: [
           ClienteListHeader(

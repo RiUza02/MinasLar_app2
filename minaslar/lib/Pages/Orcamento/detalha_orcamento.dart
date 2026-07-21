@@ -213,21 +213,31 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
 
         return Scaffold(
           backgroundColor: AppColors.background,
-          appBar: AppBar(
-            title: Text(
-              widget.isAdmin ? "Detalhes do Orçamento" : "Detalhes do Serviço",
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(40.0),
+            child: AppBar(
+              title: Text(
+                widget.isAdmin
+                    ? "Detalhes do Orçamento"
+                    : "Detalhes do Serviço",
+              ),
+              backgroundColor: corPrincipal,
+              centerTitle: true,
+              actions: widget.isAdmin
+                  ? [
+                      IconButton(
+                        icon: const Icon(AppIcons.editar),
+                        onPressed: _navegarEditar,
+                        tooltip: 'Editar Orçamento',
+                      ),
+                      IconButton(
+                        icon: const Icon(AppIcons.excluir),
+                        onPressed: _excluirOrcamento,
+                        tooltip: 'Excluir Orçamento',
+                      ),
+                    ]
+                  : [],
             ),
-            backgroundColor: corPrincipal,
-            centerTitle: true,
-            actions: widget.isAdmin
-                ? [
-                    IconButton(
-                      icon: const Icon(AppIcons.excluir),
-                      onPressed: _excluirOrcamento,
-                      tooltip: 'Excluir Orçamento',
-                    ),
-                  ]
-                : [],
           ),
           floatingActionButton: widget.isAdmin
               ? FloatingActionButton(

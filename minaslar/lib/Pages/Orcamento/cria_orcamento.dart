@@ -100,10 +100,13 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
       builder: (context, _) {
         return Scaffold(
           backgroundColor: AppColors.background,
-          appBar: AppBar(
-            title: const Text("Novo Orçamento"),
-            backgroundColor: AppColors.primaryAlternative,
-            centerTitle: true,
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(40.0),
+            child: AppBar(
+              title: const Text("Novo Orçamento"),
+              backgroundColor: AppColors.primaryAlternative,
+              centerTitle: true,
+            ),
           ),
           bottomNavigationBar: AdicionarOrcamentoBottomBar(
             isLoading: _controller.isLoading,

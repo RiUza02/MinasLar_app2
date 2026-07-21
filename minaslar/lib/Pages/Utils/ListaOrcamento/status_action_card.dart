@@ -1,6 +1,15 @@
 import '../../../../Core/Design/design_system.dart';
 import '../../../../Features/Modelos/orcamento_model.dart';
 
+/// Helper interno para representar cada item de status na interface
+class _StatusItem {
+  final String label;
+  final Color color;
+  final IconData icon;
+
+  _StatusItem({required this.label, required this.color, required this.icon});
+}
+
 class StatusActionCard extends StatelessWidget {
   final Orcamento orcamento;
   final VoidCallback onStatusChange;
@@ -11,34 +20,71 @@ class StatusActionCard extends StatelessWidget {
     required this.onStatusChange,
   });
 
+  /// Retorna no máximo 2 status respeitando as regras de prioridade:
+  /// - Especial: CONCLUÍDO (sozinho)
+  /// - Comum: ATRASADO ou PENDENTE
+  /// - Incomum: URGENTE ou GARANTIA
+  List<_StatusItem> _obterListaStatus() {
+    // 1. STATUS ESPECIAL (Concluído) -> Exibido sozinho com tema azul (AppColors.primary)
+    if (orcamento.entregue) {
+      return [
+        _StatusItem(
+          label: "CONCLUÍDO",
+          color: AppColors.primary,
+          icon: AppIcons.valido,
+        ),
+      ];
+    }
+
+    final List<_StatusItem> lista = [];
+
+    // 2. STATUS COMUM (Atrasado ou Pendente) -> Define o tema amarelo do card
+    if (orcamento.isAtrasado) {
+      lista.add(
+        _StatusItem(
+          label: "ATRASADO",
+          color: AppColors.warning,
+          icon: AppIcons.pendente,
+        ),
+      );
+    } else {
+      lista.add(
+        _StatusItem(
+          label: "PENDENTE",
+          color: AppColors.morningShift,
+          icon: AppIcons.pendente,
+        ),
+      );
+    }
+
+    // 3. STATUS INCOMUM (Urgente ou Garantia)
+    if (orcamento.ehUrgente) {
+      lista.add(
+        _StatusItem(
+          label: "URGENTE",
+          color: AppColors.error,
+          icon: AppIcons.urgente,
+        ),
+      );
+    } else if (orcamento.ehRetorno) {
+      lista.add(
+        _StatusItem(
+          label: "GARANTIA",
+          color: AppColors.adminColor,
+          icon: AppIcons.retorno,
+        ),
+      );
+    }
+
+    return lista;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final bool isConcluido = orcamento.entregue;
-    final bool ehRetorno = orcamento.ehRetorno;
-    final bool ehUrgente = orcamento.ehUrgente;
-    final bool isAtrasado = orcamento.isAtrasado;
+    final statusList = _obterListaStatus();
 
-    Color statusColor;
-    IconData statusIcon;
-    String statusText;
-
-    if (isConcluido) {
-      statusColor = AppColors.primary;
-      statusIcon = AppIcons.valido;
-      statusText = "CONCLUÍDO";
-    } else if (isAtrasado) {
-      statusColor = AppColors.warning;
-      statusIcon = AppIcons.pendente;
-      statusText = "ATRASADO";
-    } else if (ehRetorno) {
-      statusColor = AppColors.adminColor;
-      statusIcon = AppIcons.retorno;
-      statusText = "EM GARANTIA";
-    } else {
-      statusColor = AppColors.morningShift;
-      statusIcon = AppIcons.pendente;
-      statusText = "PENDENTE";
-    }
+    // O status principal (primeiro da lista) dita a cor do fundo e da borda do card
+    final corCardPrincipal = statusList.first.color;
 
     return Row(
       children: [
@@ -49,44 +95,24 @@ class StatusActionCard extends StatelessWidget {
               horizontal: AppDimensions.spaceLarge,
             ),
             decoration: BoxDecoration(
-              color: statusColor.withAlpha(38),
+              // EFEITO VISUAL MANTIDO: fundo translúcido + borda colorida referente ao status
+              color: corCardPrincipal.withAlpha(38),
               borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
-              border: Border.all(color: statusColor),
+              border: Border.all(color: corCardPrincipal),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  statusIcon,
-                  color: statusColor,
-                  size: AppDimensions.iconSizeMedium,
-                ),
-                const SizedBox(width: AppDimensions.spaceMedium),
-                Text(
-                  statusText,
-                  style: AppTextStyles.bodyLargeBold.copyWith(
-                    color: statusColor,
-                  ),
-                ),
-                if (ehUrgente && !isConcluido) ...[
-                  const SizedBox(width: AppDimensions.spaceSmall),
-                  const Text(
-                    "|",
-                    style: TextStyle(color: AppColors.textDisabled),
-                  ),
-                  const SizedBox(width: AppDimensions.spaceSmall),
-                  const Icon(
-                    AppIcons.urgente,
-                    color: AppColors.error,
-                    size: AppDimensions.iconSizeSmall,
-                  ),
-                  const SizedBox(width: AppDimensions.spaceXSmall),
-                  Text(
-                    "URGENTE",
-                    style: AppTextStyles.bodyMediumBold.copyWith(
-                      color: AppColors.error,
+                for (int i = 0; i < statusList.length; i++) ...[
+                  if (i > 0) ...[
+                    const SizedBox(width: AppDimensions.spaceSmall),
+                    const Text(
+                      "|",
+                      style: TextStyle(color: AppColors.textDisabled),
                     ),
-                  ),
+                    const SizedBox(width: AppDimensions.spaceSmall),
+                  ],
+                  _buildStatusBadge(statusList[i]),
                 ],
               ],
             ),
@@ -107,6 +133,24 @@ class StatusActionCard extends StatelessWidget {
             tooltip: "Alterar Status",
             onPressed: onStatusChange,
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusBadge(_StatusItem status) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          status.icon,
+          color: status.color,
+          size: AppDimensions.iconSizeMedium,
+        ),
+        const SizedBox(width: AppDimensions.spaceXSmall),
+        Text(
+          status.label,
+          style: AppTextStyles.bodyLargeBold.copyWith(color: status.color),
         ),
       ],
     );

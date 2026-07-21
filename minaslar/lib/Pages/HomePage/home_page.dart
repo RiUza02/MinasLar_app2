@@ -1,5 +1,6 @@
 import '../../../core/Design/design_system.dart';
 import '../Settings/settings_page.dart';
+import 'agenda.dart';
 import 'lista_cliente.dart';
 import 'lista_orcamento.dart';
 import 'overview.dart'; // Mantido conforme seu original (verifique se não há auto-referência cíclica no seu projeto)
@@ -97,6 +98,8 @@ class _HomePageState extends State<HomePage> {
           return ListaClientePage(isAdmin: widget.isAdmin);
         case 'Orçamentos':
           return ListaOrcamentoPage(isAdmin: widget.isAdmin);
+        case 'Agenda':
+          return AgendaPage(isAdmin: widget.isAdmin);
         default:
           return _placeholder(item.label!);
       }

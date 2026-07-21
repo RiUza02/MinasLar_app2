@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import '../../../../Core/Design/design_system.dart';
 import '../../../../Core/Widgets/widgets.dart';
 import '../../../Features/Repositorios/orcamento_repository.dart';
+import '../../Orcamento/detalha_orcamento.dart';
 import '../Orcamentos/orcamento_history_card.dart';
 
 /// [uso] Exibe o histórico de orçamentos de um cliente,
@@ -38,11 +38,34 @@ class _ClienteOrcamentosHistoryState extends State<ClienteOrcamentosHistory> {
   @override
   void initState() {
     super.initState();
+    _loadHistory();
+  }
 
-    // Carrega o histórico do cliente.
-    _historicoFuture = _orcamentoRepository.buscarHistoricoPorCliente(
-      widget.clienteId,
+  /// Carrega ou recarrega o histórico de orçamentos do cliente.
+  void _loadHistory() {
+    setState(() {
+      _historicoFuture = _orcamentoRepository.buscarHistoricoPorCliente(
+        widget.clienteId,
+      );
+    });
+  }
+
+  /// Navega para a tela de detalhes do orçamento e atualiza a lista se houver modificação.
+  void _navegarParaDetalhes(Map<String, dynamic> orcamento) async {
+    final foiModificado = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DetalhesOrcamento(
+          orcamentoInicial: orcamento,
+          isAdmin: widget.isAdmin,
+        ),
+      ),
     );
+
+    // Se o orçamento foi alterado (editado/excluído), recarrega o histórico.
+    if (foiModificado == true && mounted) {
+      _loadHistory();
+    }
   }
 
   @override
@@ -52,7 +75,7 @@ class _ClienteOrcamentosHistoryState extends State<ClienteOrcamentosHistory> {
       children: [
         // Título da seção.
         const AppSectionHeader(
-          icon: Icons.history,
+          icon: AppIcons.historico,
           title: 'HISTÓRICO DE ORÇAMENTOS',
         ),
 
@@ -69,7 +92,7 @@ class _ClienteOrcamentosHistoryState extends State<ClienteOrcamentosHistory> {
             if (snapshot.hasError) {
               return const AppEmptyListIndicator(
                 message: "Não foi possível carregar o histórico.",
-                icon: Icons.receipt_long_outlined,
+                icon: AppIcons.orcamentos,
               );
             }
 
@@ -79,7 +102,7 @@ class _ClienteOrcamentosHistoryState extends State<ClienteOrcamentosHistory> {
             if (orcamentos.isEmpty) {
               return const AppEmptyListIndicator(
                 message: "Nenhum orçamento registrado para este cliente.",
-                icon: Icons.receipt_long_outlined,
+                icon: AppIcons.orcamentos,
               );
             }
 
@@ -101,6 +124,8 @@ class _ClienteOrcamentosHistoryState extends State<ClienteOrcamentosHistory> {
                   isHighlight: orcamento['id'] == widget.orcamentoIdDestaque,
 
                   isAdmin: widget.isAdmin,
+                  onActionCompleted: _loadHistory,
+                  onTap: () => _navegarParaDetalhes(orcamento),
                 );
               },
             );

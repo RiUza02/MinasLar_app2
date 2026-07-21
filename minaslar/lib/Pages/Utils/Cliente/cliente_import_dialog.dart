@@ -32,7 +32,7 @@ class _ClienteImportDialogState extends State<ClienteImportDialog> {
       // Título.
       title: const Row(
         children: [
-          Icon(Icons.paste, color: AppColors.primaryAlternative),
+          Icon(AppIcons.importar, color: AppColors.primaryAlternative),
           SizedBox(width: AppDimensions.spaceSmall),
           Text("Importar Dados"),
         ],

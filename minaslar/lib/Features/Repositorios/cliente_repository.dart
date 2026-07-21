@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
 import '../Modelos/cliente_model.dart';
 import '../../Pages/HomePage/lista_cliente.dart';
 
@@ -123,11 +124,17 @@ class ClienteRepository {
     required String rua,
     required String numero,
   }) async {
+    if (nome.trim().isEmpty || rua.trim().isEmpty || numero.trim().isEmpty) {
+      return null;
+    }
+
+    final primeiroNome = nome.trim().split(' ').first;
+
     try {
       final response = await _supabase
           .from('clientes')
           .select()
-          .ilike('nome', '%${nome.trim()}%')
+          .ilike('nome', '$primeiroNome%')
           .ilike('rua', '%${rua.trim()}%')
           .eq('numero', numero.trim())
           .limit(1)
@@ -137,7 +144,10 @@ class ClienteRepository {
         return Cliente.fromMap(response);
       }
       return null;
-    } catch (_) {
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint("Erro ao verificar cliente duplicado: $e");
+      }
       return null;
     }
   }

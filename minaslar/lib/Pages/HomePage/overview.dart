@@ -82,35 +82,14 @@ class _OverViewState extends State<OverView>
     }
   }
 
-  /// [uso]: Abre a tela de criação de um novo orçamento.
-  void _abrirNovoOrcamento() async {
-    AppFeedback.show(
-      context,
-      'Função de adicionar orçamento ainda não implementada.',
-    );
-  }
-
-  /// [uso]: Constrói os botões flutuantes (FABs) de rota e novo orçamento para perfil administrador.
-  Widget _buildAdminFabs() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        FloatingActionButton(
-          heroTag: "btnRota",
-          onPressed: _gerarRota,
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.textPrimary,
-          child: const Icon(Icons.map_outlined),
-        ),
-        const SizedBox(height: AppDimensions.spaceLarge),
-        FloatingActionButton(
-          heroTag: "btnAdd",
-          onPressed: _abrirNovoOrcamento,
-          backgroundColor: _themeColor,
-          foregroundColor: AppColors.textPrimary,
-          child: const Icon(AppIcons.add),
-        ),
-      ],
+  /// [uso]: Constrói o botão flutuante (FAB) de rota para perfil administrador.
+  Widget _buildAdminFab() {
+    return FloatingActionButton(
+      heroTag: "btnRota",
+      onPressed: _gerarRota,
+      backgroundColor: AppColors.primary,
+      foregroundColor: AppColors.textPrimary,
+      child: const Icon(Icons.map_outlined),
     );
   }
 
@@ -119,7 +98,7 @@ class _OverViewState extends State<OverView>
     super.build(context);
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: widget.isAdmin ? _buildAdminFabs() : null,
+      floatingActionButton: widget.isAdmin ? _buildAdminFab() : null,
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _futureOrcamentos,
         builder: (context, snapshot) {

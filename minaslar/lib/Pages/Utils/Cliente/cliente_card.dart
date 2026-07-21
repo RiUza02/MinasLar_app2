@@ -75,7 +75,7 @@ class ClienteContatoCard extends StatelessWidget {
               // Inicia uma ligação.
               IconButton(
                 onPressed: () => LauncherUtils.fazerLigacao(cliente.telefone),
-                icon: const Icon(Icons.phone),
+                icon: const Icon(AppIcons.ligar),
                 tooltip: 'Ligar',
               ),
 

@@ -26,7 +26,7 @@ class ClienteDuplicadoDialog extends StatelessWidget {
       // Título do diálogo.
       title: const Row(
         children: [
-          Icon(Icons.people_alt_outlined, color: Colors.amber),
+          Icon(AppIcons.clientes, color: Colors.amber),
           SizedBox(width: AppDimensions.spaceSmall),
           Text("Cliente Parecido Encontrado"),
         ],
@@ -112,7 +112,7 @@ class ClienteDuplicadoDialog extends StatelessWidget {
         ElevatedButton.icon(
           onPressed: () =>
               Navigator.pop(context, ClienteDuplicadoAction.criarOrcamento),
-          icon: const Icon(Icons.add_comment),
+          icon: const Icon(AppIcons.adicionarOrcamento),
           label: const Text("Criar Orçamento"),
         ),
       ],

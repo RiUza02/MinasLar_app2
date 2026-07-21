@@ -22,7 +22,7 @@ class ProfileInfoCard extends StatelessWidget {
       icone: AppIcons.dadosPessoaisSection,
       titulo: 'MEUS DADOS',
       action: IconButton(
-        icon: Icon(Icons.edit_outlined, color: themeColor),
+        icon: Icon(AppIcons.editar, color: themeColor),
         onPressed: onEdit,
         tooltip: 'Editar Perfil',
         visualDensity: VisualDensity.compact,

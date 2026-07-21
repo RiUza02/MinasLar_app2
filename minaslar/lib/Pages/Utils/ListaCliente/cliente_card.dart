@@ -89,7 +89,7 @@ class ClienteCard extends StatelessWidget {
                     Row(
                       children: [
                         const Icon(
-                          Icons.history,
+                          AppIcons.historico,
                           size: AppDimensions.iconSizeXSmall,
                           color: AppColors.primary,
                         ),
@@ -106,7 +106,7 @@ class ClienteCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: AppColors.textDisabled),
+              const Icon(AppIcons.navegar, color: AppColors.textDisabled),
             ],
           ),
         ),

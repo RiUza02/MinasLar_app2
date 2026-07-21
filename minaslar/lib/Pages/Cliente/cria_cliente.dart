@@ -7,6 +7,7 @@ import '../Utils/Cliente/cliente_import_parser.dart';
 import '../Utils/Cliente/cliente_duplicado_dialog.dart';
 import '../Utils/Cliente/cliente_import_dialog.dart';
 import '../Utils/Cliente/tipo_pessoa_selector.dart';
+import '../Orcamento/cria_orcamento.dart';
 import '../../Features/Modelos/cliente_model.dart';
 import '../../Features/Repositorios/cliente_repository.dart';
 
@@ -176,8 +177,14 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
         await _criarNovoCliente();
         break;
       case ClienteDuplicadoAction.criarOrcamento:
-        // TODO: Implementar navegação para Adicionar Orçamento
-        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => AdicionarOrcamentoPage(cliente: clienteEncontrado)));
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AdicionarOrcamento(cliente: clienteEncontrado),
+            ),
+          );
+        }
         break;
       default:
         break;
@@ -205,7 +212,7 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
             children: [
               OutlinedButton.icon(
                 onPressed: _mostrarModalImportacao,
-                icon: const Icon(Icons.content_paste_go),
+                icon: const Icon(AppIcons.importar),
                 label: const Text("Importar Dados de Texto"),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primaryAlternative,
@@ -240,7 +247,7 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
                   AppTextField(
                     controller: _ruaController,
                     label: 'Rua',
-                    icon: Icons.add_road,
+                    icon: AppIcons.rua,
                     validator: (v) => v!.isEmpty ? 'Campo obrigatório' : null,
                   ),
                   const SizedBox(height: AppDimensions.spaceMedium),
@@ -250,7 +257,7 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
                         child: AppTextField(
                           controller: _numeroController,
                           label: 'Nº',
-                          icon: Icons.home_filled,
+                          icon: AppIcons.numeroCasa,
                           keyboardType: TextInputType.text,
                           validator: (v) => v!.isEmpty ? 'Req.' : null,
                         ),
@@ -260,7 +267,7 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
                         child: AppTextField(
                           controller: _complementoController,
                           label: 'Apto / Comp.',
-                          icon: Icons.apartment,
+                          icon: AppIcons.complemento,
                         ),
                       ),
                     ],
@@ -269,7 +276,7 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
                   AppTextField(
                     controller: _bairroController,
                     label: 'Bairro',
-                    icon: Icons.location_city,
+                    icon: AppIcons.bairro,
                     validator: (v) => v!.isEmpty ? 'Campo obrigatório' : null,
                   ),
                 ],
@@ -277,7 +284,7 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
               const SizedBox(height: AppDimensions.spaceLarge),
               AppCardContainer(
                 titulo: 'DOCUMENTAÇÃO (OPCIONAL)',
-                icone: Icons.badge_outlined,
+                icone: AppIcons.documento,
                 children: [
                   TipoPessoaSelector(
                     isPessoaFisica: _isPessoaFisica,
@@ -288,7 +295,7 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
                     firstChild: AppTextField(
                       label: "CPF (Opcional)",
                       controller: _cpfController,
-                      icon: Icons.badge_outlined,
+                      icon: AppIcons.documento,
                       keyboardType: TextInputType.number,
                       inputFormatters: [AppFormatters.cpf],
                       validator: (v) =>
@@ -299,7 +306,7 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
                     secondChild: AppTextField(
                       label: "CNPJ (Opcional)",
                       controller: _cnpjController,
-                      icon: Icons.domain,
+                      icon: AppIcons.empresa,
                       keyboardType: TextInputType.number,
                       inputFormatters: [AppFormatters.cnpj],
                       validator: (v) =>
@@ -317,7 +324,7 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
               const SizedBox(height: AppDimensions.spaceLarge),
               AppCardContainer(
                 titulo: 'STATUS E OBSERVAÇÕES',
-                icone: Icons.info_outline,
+                icone: AppIcons.info,
                 children: [
                   SwitchListTile(
                     activeThumbColor: AppColors.error,
@@ -340,7 +347,7 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
                   AppTextField(
                     label: "Observações (Opcional)",
                     controller: _observacaoController,
-                    icon: Icons.note,
+                    icon: AppIcons.observacao,
                     maxLines: 3,
                   ),
                 ],

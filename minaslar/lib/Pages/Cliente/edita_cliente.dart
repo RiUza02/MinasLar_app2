@@ -193,7 +193,7 @@ class _EditarClientePageState extends State<EditarClientePage> {
                   AppTextField(
                     controller: _ruaController,
                     label: 'Rua',
-                    icon: Icons.add_road,
+                    icon: AppIcons.rua,
                     validator: (v) => v!.isEmpty ? 'Campo obrigatório' : null,
                   ),
                   const SizedBox(height: AppDimensions.spaceMedium),
@@ -203,7 +203,7 @@ class _EditarClientePageState extends State<EditarClientePage> {
                         child: AppTextField(
                           controller: _numeroController,
                           label: 'Nº',
-                          icon: Icons.home_filled,
+                          icon: AppIcons.numeroCasa,
                           keyboardType: TextInputType.number,
                           validator: (v) => v!.isEmpty ? 'Req.' : null,
                         ),
@@ -213,7 +213,7 @@ class _EditarClientePageState extends State<EditarClientePage> {
                         child: AppTextField(
                           controller: _complementoController,
                           label: 'Apto / Comp.',
-                          icon: Icons.apartment,
+                          icon: AppIcons.complemento,
                         ),
                       ),
                     ],
@@ -222,7 +222,7 @@ class _EditarClientePageState extends State<EditarClientePage> {
                   AppTextField(
                     controller: _bairroController,
                     label: 'Bairro',
-                    icon: Icons.location_city,
+                    icon: AppIcons.bairro,
                     validator: (v) => v!.isEmpty ? 'Campo obrigatório' : null,
                   ),
                 ],
@@ -230,7 +230,7 @@ class _EditarClientePageState extends State<EditarClientePage> {
               const SizedBox(height: AppDimensions.spaceLarge),
               AppCardContainer(
                 titulo: 'DOCUMENTAÇÃO (OPCIONAL)',
-                icone: Icons.badge_outlined,
+                icone: AppIcons.documento,
                 children: [
                   TipoPessoaSelector(
                     isPessoaFisica: _isPessoaFisica,
@@ -250,7 +250,7 @@ class _EditarClientePageState extends State<EditarClientePage> {
                     firstChild: AppTextField(
                       label: "CPF (Opcional)",
                       controller: _cpfController,
-                      icon: Icons.badge_outlined,
+                      icon: AppIcons.documento,
                       keyboardType: TextInputType.number,
                       inputFormatters: [AppFormatters.cpf],
                       validator: (v) =>
@@ -261,7 +261,7 @@ class _EditarClientePageState extends State<EditarClientePage> {
                     secondChild: AppTextField(
                       label: "CNPJ (Opcional)",
                       controller: _cnpjController,
-                      icon: Icons.domain,
+                      icon: AppIcons.empresa,
                       keyboardType: TextInputType.number,
                       inputFormatters: [AppFormatters.cnpj],
                       validator: (v) =>
@@ -279,7 +279,7 @@ class _EditarClientePageState extends State<EditarClientePage> {
               const SizedBox(height: AppDimensions.spaceLarge),
               AppCardContainer(
                 titulo: 'STATUS E OBSERVAÇÕES',
-                icone: Icons.info_outline,
+                icone: AppIcons.info,
                 children: [
                   SwitchListTile(
                     activeThumbColor: AppColors.error,
@@ -302,7 +302,7 @@ class _EditarClientePageState extends State<EditarClientePage> {
                   AppTextField(
                     label: "Observações (Opcional)",
                     controller: _observacaoController,
-                    icon: Icons.note,
+                    icon: AppIcons.observacao,
                     maxLines: 3,
                   ),
                 ],

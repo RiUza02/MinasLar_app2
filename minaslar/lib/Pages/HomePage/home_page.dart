@@ -1,6 +1,7 @@
 import '../../../core/Design/design_system.dart';
 import '../Settings/settings_page.dart';
 import 'lista_cliente.dart';
+import 'lista_orcamento.dart';
 import 'overview.dart'; // Mantido conforme seu original (verifique se não há auto-referência cíclica no seu projeto)
 
 // ============================================================================
@@ -13,7 +14,7 @@ import 'overview.dart'; // Mantido conforme seu original (verifique se não há 
 // [ ] Assistente (Administrador / Usuário Comum)
 // [X] Home       (Adicionado)
 // [X] Clientes   (Adicionado)
-// [ ] Orçamentos (Administrador / Usuário Comum)
+// [X] Orçamentos (Adicionado)
 // [X] Configurações (Adicionado)
 // ============================================================================
 
@@ -94,6 +95,8 @@ class _HomePageState extends State<HomePage> {
         case 'Clientes':
           // Redireciona a aba Clientes para a página com o status de admin
           return ListaClientePage(isAdmin: widget.isAdmin);
+        case 'Orçamentos':
+          return ListaOrcamentoPage(isAdmin: widget.isAdmin);
         default:
           return _placeholder(item.label!);
       }

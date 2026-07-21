@@ -1,5 +1,8 @@
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../Core/Design/design_system.dart';
+import '../../../../Core/Widgets/widgets.dart';
+import '../../Orcamento/edita_orcamento.dart';
 
 /// [uso] Exibe um orçamento no histórico do cliente,
 /// destacando o orçamento mais recente ou um orçamento específico.
@@ -16,12 +19,20 @@ class OrcamentoHistoryCard extends StatelessWidget {
   /// Define se as opções administrativas devem ser exibidas.
   final bool isAdmin;
 
+  /// Callback para notificar o widget pai que a lista precisa ser atualizada.
+  final VoidCallback? onActionCompleted;
+
+  /// Callback para quando o card é pressionado.
+  final VoidCallback? onTap;
+
   const OrcamentoHistoryCard({
     super.key,
     required this.orcamento,
     required this.isLast,
     required this.isHighlight,
     required this.isAdmin,
+    this.onActionCompleted,
+    this.onTap,
   });
 
   @override
@@ -49,6 +60,7 @@ class OrcamentoHistoryCard extends StatelessWidget {
             : const BorderSide(color: AppColors.borderLight),
       ),
       child: ListTile(
+        onTap: onTap,
         // Espaçamento interno.
         contentPadding: const EdgeInsets.symmetric(
           vertical: AppDimensions.spaceSmall,
@@ -101,7 +113,76 @@ class OrcamentoHistoryCard extends StatelessWidget {
         trailing: isAdmin
             ? PopupMenuButton<String>(
                 onSelected: (choice) {
-                  // TODO: Implementar edição e exclusão.
+                  // Utiliza uma função anônima assíncrona para lidar com as operações.
+                  () async {
+                    if (choice == 'editar') {
+                      // Navega para a tela de edição.
+                      final bool? foiAtualizado = await Navigator.push<bool>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              EditarOrcamento(orcamento: orcamento),
+                        ),
+                      );
+                      if (foiAtualizado == true) {
+                        onActionCompleted?.call();
+                      }
+                    } else if (choice == 'excluir') {
+                      // Exibe um diálogo de confirmação antes de excluir.
+                      final confirmar = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          backgroundColor: AppColors.cardBackground,
+                          title: Text(
+                            "Excluir Orçamento",
+                            style: AppTextStyles.titleMedium,
+                          ),
+                          content: Text(
+                            "Tem certeza? Esta ação não pode ser desfeita.",
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text("CANCELAR"),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: Text(
+                                "EXCLUIR",
+                                style: TextStyle(color: AppColors.error),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmar == true && context.mounted) {
+                        try {
+                          await Supabase.instance.client
+                              .from('orcamentos')
+                              .delete()
+                              .eq('id', orcamento['id']);
+
+                          // 1. Verificação obrigatória após o "async gap" (await)
+                          if (!context.mounted) return;
+
+                          AppFeedback.show(context, 'Orçamento excluído!');
+                          // NOTA: A atualização da lista deve ser acionada aqui.
+                        } catch (e) {
+                          // 2. Verificação de segurança também dentro do catch
+                          if (!context.mounted) return;
+
+                          AppFeedback.show(
+                            context,
+                            'Erro ao excluir: $e',
+                            type: FeedbackType.error,
+                          );
+                        }
+                      }
+                    }
+                  }();
                 },
                 itemBuilder: (context) => [
                   const PopupMenuItem(value: 'editar', child: Text('Editar')),

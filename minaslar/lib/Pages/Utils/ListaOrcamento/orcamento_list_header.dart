@@ -1,15 +1,15 @@
 import '../../../../Core/Design/design_system.dart';
-import '../../HomePage/lista_cliente.dart'; // For ClienteSortColumn
-import 'cliente_search_bar.dart';
+import '../../HomePage/lista_orcamento.dart'; // For OrcamentoSortColumn
+import 'orcamento_search_bar.dart';
 
-/// [uso] Cabeçalho da lista de clientes, contendo a barra de busca e o menu de ordenação.
-class ClienteListHeader extends StatelessWidget {
+/// [uso] Cabeçalho da lista de orçamentos, contendo a barra de busca e o menu de ordenação.
+class OrcamentoListHeader extends StatelessWidget {
   final TextEditingController searchController;
-  final ClienteSortColumn sortColumn;
+  final OrcamentoSortColumn sortColumn;
   final bool sortAscending;
-  final Function(ClienteSortColumn?) onSortChanged;
+  final Function(OrcamentoSortColumn?) onSortChanged;
 
-  const ClienteListHeader({
+  const OrcamentoListHeader({
     super.key,
     required this.searchController,
     required this.sortColumn,
@@ -27,7 +27,7 @@ class ClienteListHeader extends StatelessWidget {
       color: AppColors.cardBackground,
       child: Row(
         children: [
-          Expanded(child: ClienteSearchBar(controller: searchController)),
+          Expanded(child: OrcamentoSearchBar(controller: searchController)),
           const SizedBox(width: AppDimensions.spaceSmall),
           _buildSortMenu(context),
         ],
@@ -42,25 +42,21 @@ class ClienteListHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
         border: Border.all(color: AppColors.borderLight),
       ),
-      child: PopupMenuButton<ClienteSortColumn>(
+      child: PopupMenuButton<OrcamentoSortColumn>(
         icon: const Icon(AppIcons.ordenar, color: AppColors.primary),
-        tooltip: "Ordenar clientes",
+        tooltip: "Ordenar orçamentos",
         onSelected: onSortChanged,
         itemBuilder: (context) => [
-          _buildSortMenuItem(
-            ClienteSortColumn.ultimoAtendimento,
-            "Último Atendimento",
-          ),
-          _buildSortMenuItem(ClienteSortColumn.nome, "Nome (A-Z)"),
-          _buildSortMenuItem(ClienteSortColumn.rua, "Rua (A-Z)"),
-          _buildSortMenuItem(ClienteSortColumn.bairro, "Bairro (A-Z)"),
+          _buildSortMenuItem(OrcamentoSortColumn.dataRecente, "Mais Recentes"),
+          _buildSortMenuItem(OrcamentoSortColumn.valor, "Valor"),
+          _buildSortMenuItem(OrcamentoSortColumn.status, "Status"),
         ],
       ),
     );
   }
 
-  PopupMenuItem<ClienteSortColumn> _buildSortMenuItem(
-    ClienteSortColumn value,
+  PopupMenuItem<OrcamentoSortColumn> _buildSortMenuItem(
+    OrcamentoSortColumn value,
     String text,
   ) {
     final isSelected = sortColumn == value;

@@ -11,6 +11,7 @@ import '../Utils/Cliente/cliente_orcamentos_history.dart';
 import '../../Features/Modelos/cliente_model.dart';
 import '../../Features/Repositorios/cliente_repository.dart';
 import 'edita_cliente.dart';
+import '../Orcamento/cria_orcamento.dart';
 
 // O widget AppInfoRow foi criado em 'lib/Core/Widgets/app_info_row.dart'
 // e exportado em 'lib/Core/Widgets/widgets.dart' para que este import funcione.
@@ -35,6 +36,7 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
   late Cliente _clienteExibido;
   late final Color corTema;
   final _clienteRepository = ClienteRepository();
+  Key _orcamentoHistoryKey = UniqueKey();
 
   @override
   void initState() {
@@ -52,7 +54,10 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
       );
 
       if (response != null && mounted) {
-        setState(() => _clienteExibido = Cliente.fromMap(response));
+        setState(() {
+          _clienteExibido = Cliente.fromMap(response);
+          _orcamentoHistoryKey = UniqueKey();
+        });
         AppFeedback.show(context, 'Dados atualizados.');
       }
     } catch (e) {
@@ -133,7 +138,7 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
           actions: widget.isAdmin
               ? [
                   IconButton(
-                    icon: const Icon(Icons.edit),
+                    icon: const Icon(AppIcons.editar),
                     tooltip: 'Editar Cliente',
                     onPressed: () async {
                       final Cliente? clienteAtualizado =
@@ -151,7 +156,7 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
                     },
                   ),
                   IconButton(
-                    icon: const Icon(Icons.delete_forever_outlined),
+                    icon: const Icon(AppIcons.excluir),
                     tooltip: 'Excluir Cliente',
                     onPressed: _excluirCliente,
                   ),
@@ -161,11 +166,24 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
       ),
       floatingActionButton: widget.isAdmin
           ? FloatingActionButton(
-              onPressed: () {
-                // TODO: Navegar para AdicionarOrcamentoPage
+              onPressed: () async {
+                final orcamentoAdicionado = await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        AdicionarOrcamento(cliente: _clienteExibido),
+                  ),
+                );
+
+                if (orcamentoAdicionado == true && mounted) {
+                  setState(() {
+                    _orcamentoHistoryKey = UniqueKey();
+                  });
+                }
               },
               backgroundColor: corTema,
-              child: const Icon(Icons.add_comment_outlined),
+              foregroundColor: AppColors.textPrimary,
+              child: const Icon(AppIcons.adicionarOrcamento),
             )
           : null,
       body: RefreshIndicator(
@@ -188,7 +206,7 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
               if (_clienteExibido.rua.isNotEmpty) ...[
                 const SizedBox(height: AppDimensions.spaceMedium),
                 AppInfoRow(
-                  icon: Icons.location_on_outlined,
+                  icon: AppIcons.endereco,
                   label: "Endereço",
                   value:
                       '${_clienteExibido.rua}, ${_clienteExibido.numero}${_clienteExibido.complemento != null && _clienteExibido.complemento!.isNotEmpty ? ' (${_clienteExibido.complemento})' : ''} - ${_clienteExibido.bairro}',
@@ -196,8 +214,8 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
                     '${_clienteExibido.rua}, ${_clienteExibido.numero}',
                     'Endereço',
                   ),
-                  actionIcon: Icons.map_outlined,
-                  actionIconColor: corTema,
+                  actionIcon: AppIcons.mapa,
+                  actionIconColor: AppColors.primary,
                   onActionTap: () => LauncherUtils.abrirGoogleMapsPorEndereco(
                     rua: _clienteExibido.rua,
                     numero: _clienteExibido.numero,
@@ -209,7 +227,7 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
                   _clienteExibido.cpf!.isNotEmpty) ...[
                 const SizedBox(height: AppDimensions.spaceMedium),
                 AppInfoRow(
-                  icon: Icons.badge_outlined,
+                  icon: AppIcons.documento,
                   label: "CPF",
                   value: AppFormatters.cpf.maskText(_clienteExibido.cpf!),
                   onLongPress: () =>
@@ -220,7 +238,7 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
                   _clienteExibido.cnpj!.isNotEmpty) ...[
                 const SizedBox(height: AppDimensions.spaceMedium),
                 AppInfoRow(
-                  icon: Icons.domain,
+                  icon: AppIcons.empresa,
                   label: "CNPJ",
                   value: AppFormatters.cnpj.maskText(_clienteExibido.cnpj!),
                   onLongPress: () =>
@@ -231,7 +249,7 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
                   _clienteExibido.observacao!.isNotEmpty) ...[
                 const SizedBox(height: AppDimensions.spaceMedium),
                 AppInfoRow(
-                  icon: Icons.comment_outlined,
+                  icon: AppIcons.observacao,
                   label: "Observações",
                   value: _clienteExibido.observacao!,
                   isMultiline: true,
@@ -240,6 +258,7 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
               const SizedBox(height: AppDimensions.spaceXLarge),
               if (_clienteExibido.id != null)
                 ClienteOrcamentosHistory(
+                  key: _orcamentoHistoryKey,
                   clienteId: _clienteExibido.id!,
                   isAdmin: widget.isAdmin,
                   orcamentoIdDestaque: widget.orcamentoIdDestaque,

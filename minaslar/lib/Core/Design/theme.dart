@@ -19,7 +19,7 @@ class AppTheme {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
       ),
-      textStyle: AppTextStyles.buttonText,
+      textStyle: AppTextStyles.button,
     );
   }
 
@@ -84,7 +84,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
           ),
-          textStyle: AppTextStyles.buttonText,
+          textStyle: AppTextStyles.button,
         ),
       ),
 

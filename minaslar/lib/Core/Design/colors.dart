@@ -58,4 +58,7 @@ class AppColors {
 
   /// [Uso]: Indicações de falha ou atenção. Usado em textos de validação de formulário
   static const Color error = Colors.redAccent;
+
+  /// [Uso]: Indicações de alerta ou atenção. Usado em textos de validação de formulário
+  static const Color warning = Colors.orangeAccent;
 }

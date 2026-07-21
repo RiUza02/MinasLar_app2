@@ -3,7 +3,7 @@ import '../../../Core/Services/communication.dart';
 import '../../../Core/Design/borders.dart';
 import '../../../Core/Widgets/widgets.dart';
 
-/// [uso] Card para exibição de um orçamento na HomePage com destaque para Urgências.
+/// [uso] Card para exibição de um orçamento na HomePage com destaque rigoroso para os 6 níveis de prioridade.
 class OrcamentoCard extends StatelessWidget {
   final Map<String, dynamic> orcamento;
   final VoidCallback onCardTap;
@@ -16,7 +16,7 @@ class OrcamentoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // como um Map (objeto único) ou uma List (array de objetos).
+    // Tratamento seguro do cliente vindo via JOIN (como Map único ou List)
     final rawCliente = orcamento['clientes'];
     final Map<String, dynamic> cliente = rawCliente is List
         ? (rawCliente.isNotEmpty
@@ -24,7 +24,7 @@ class OrcamentoCard extends StatelessWidget {
               : {})
         : (rawCliente as Map<String, dynamic>? ?? {});
 
-    // para evitar que números (como int do PostgreSQL) quebrem as telas ou funções de Launcher.
+    // Extração segura de strings
     final nomeCliente = (cliente['nome'] ?? 'Cliente').toString();
     final telefone = (cliente['telefone'] ?? '').toString();
     final rua = (cliente['rua'] ?? '').toString();
@@ -33,34 +33,72 @@ class OrcamentoCard extends StatelessWidget {
     final bairro = (cliente['bairro'] ?? '').toString();
     final tituloServico = (orcamento['titulo'] ?? '').toString();
 
-    // Como a coluna eh_urgente é BOOLEAN NOT NULL no Postgres, extraímos direto com fallback seguro.
+    // Extrações de booleanos e datas para o cálculo rigoroso das 6 prioridades
+    final bool isEntregue = orcamento['entregue'] == true;
     final bool isUrgente = orcamento['eh_urgente'] == true;
+    final bool isRetorno = orcamento['eh_retorno'] == true;
 
-    final horarioTexto = (orcamento['horario_do_dia'] ?? 'Manhã').toString();
-    final isTarde = horarioTexto.toLowerCase() == 'tarde';
-
-    // Define a identidade visual e as bordas decorativas baseadas no nível de prioridade (Urgente > Turno).
-    final Color corDestaque;
-    final Border cardBorder;
-
-    if (isUrgente) {
-      corDestaque = AppColors.error;
-      cardBorder = AppBorders.urgent;
-    } else if (isTarde) {
-      corDestaque = AppColors.afternoonShift;
-      cardBorder = AppBorders.afternoonShift;
-    } else {
-      corDestaque = AppColors.morningShift;
-      cardBorder = AppBorders.morningShift;
+    final dataEntregaStr = orcamento['data_entrega']?.toString();
+    DateTime? dataEntregaDateOnly;
+    if (dataEntregaStr != null &&
+        dataEntregaStr.isNotEmpty &&
+        dataEntregaStr != 'null') {
+      final parsed = DateTime.tryParse(dataEntregaStr);
+      if (parsed != null) {
+        dataEntregaDateOnly = DateUtils.dateOnly(parsed);
+      }
     }
 
-    // A cor da tag de turno permanece estrita ao horário, sem herdar a cor de urgência.
+    final hoje = DateUtils.dateOnly(DateTime.now());
+    final bool isAtrasado =
+        !isEntregue &&
+        dataEntregaDateOnly != null &&
+        dataEntregaDateOnly.isBefore(hoje);
+
+    // --- APLICAÇÃO RIGOROSA DAS 6 REGRAS DE PRIORIDADE ---
+    String statusLabel;
+    Color corDestaque;
+    Border cardBorder;
+
+    if (!isEntregue && isUrgente) {
+      // 1º: Urgente e não entregue -> Vermelho
+      statusLabel = "URGENTE";
+      corDestaque = Colors.red;
+      cardBorder = AppBorders.urgent;
+    } else if (!isEntregue && isAtrasado) {
+      // 2º: Data de entrega inferior ao dia de hj -> Laranja
+      statusLabel = "ATRASADO";
+      corDestaque = Colors.orange;
+      cardBorder = Border(left: BorderSide(color: corDestaque, width: 5));
+    } else if (!isEntregue && isRetorno) {
+      // 3º: Marcados como garantia (ou retorno) -> Verde
+      statusLabel = "GARANTIA";
+      corDestaque = Colors.green;
+      cardBorder = Border(left: BorderSide(color: corDestaque, width: 5));
+    } else if (!isEntregue && dataEntregaDateOnly != null) {
+      // 4º: Data de entrega superior (ou igual) ao dia de hj -> Azul
+      statusLabel = "PENDENTE";
+      corDestaque = Colors.blue;
+      cardBorder = Border(left: BorderSide(color: corDestaque, width: 5));
+    } else if (isEntregue) {
+      // 5º: Concluídos -> Azul com nome riscado
+      statusLabel = "CONCLUÍDO";
+      corDestaque = Colors.blue;
+      cardBorder = Border(left: BorderSide(color: corDestaque, width: 5));
+    } else {
+      // 6º: Sem data -> Azul, mas sem data
+      statusLabel = "SEM DATA";
+      corDestaque = Colors.blue;
+      cardBorder = Border(left: BorderSide(color: corDestaque, width: 5));
+    }
+
+    // Configurações do Turno (Manhã/Tarde)
+    final horarioTexto = (orcamento['horario_do_dia'] ?? 'Manhã').toString();
+    final isTarde = horarioTexto.toLowerCase() == 'tarde';
     final Color corTurno = isTarde
         ? AppColors.afternoonShift
         : AppColors.morningShift;
-    final IconData iconHorario = isTarde
-        ? Icons.wb_twilight
-        : Icons.wb_sunny_outlined;
+    final IconData iconHorario = isTarde ? AppIcons.tarde : AppIcons.manha;
     final String labelTurno = isTarde ? "TARDE" : "MANHÃ";
 
     return Container(
@@ -78,10 +116,10 @@ class OrcamentoCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Linha lateral decorativa que reflete visualmente a prioridade definida.
+              // Linha lateral decorativa que reflete visualmente a prioridade definida pelas 6 regras.
               Container(
                 width: AppDimensions.spaceSmall,
-                color: corDestaque.withAlpha((255 * 0.15).round()),
+                color: corDestaque.withValues(alpha: 0.15),
               ),
               Expanded(
                 child: Padding(
@@ -90,18 +128,20 @@ class OrcamentoCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           // Ícone e identificador do Turno (Manhã ou Tarde)
                           _buildTurnoTag(corTurno, iconHorario, labelTurno),
-                          // Caso seja urgente, insere a tag em vermelho logo ao lado[cite: 1]
-                          if (isUrgente) ...[
-                            const SizedBox(width: AppDimensions.spaceSmall),
-                            _buildUrgenteTag(),
-                          ],
+                          // Tag visual do Status de acordo com a prioridade
+                          _buildStatusTag(statusLabel, corDestaque),
                         ],
                       ),
                       const SizedBox(height: AppDimensions.spaceMedium),
-                      _buildClienteInfo(nomeCliente, tituloServico),
+                      _buildClienteInfo(
+                        nomeCliente,
+                        tituloServico,
+                        isEntregue: isEntregue,
+                      ),
                       const SizedBox(height: AppDimensions.spaceLarge),
                       const Divider(color: AppColors.borderLight, height: 1),
                       const SizedBox(height: AppDimensions.spaceMedium),
@@ -136,7 +176,7 @@ class OrcamentoCard extends StatelessWidget {
         vertical: AppDimensions.spaceXSmall,
       ),
       decoration: BoxDecoration(
-        color: corFaixa.withAlpha((255 * 0.15).round()),
+        color: corFaixa.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
       ),
       child: Row(
@@ -157,40 +197,35 @@ class OrcamentoCard extends StatelessWidget {
     );
   }
 
-  /// [uso] Cria a tag vermelha indicativa de alta prioridade para o atendimento.
-  Widget _buildUrgenteTag() {
+  /// [uso] Cria a tag visual do status (Urgente, Atrasado, Garantia, Concluído, etc.)
+  Widget _buildStatusTag(String label, Color cor) {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDimensions.spaceSmall,
         vertical: AppDimensions.spaceXSmall,
       ),
       decoration: BoxDecoration(
-        color: AppColors.error.withAlpha((255 * 0.15).round()),
+        color: cor.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+        border: Border.all(color: cor.withValues(alpha: 0.4)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.local_fire_department_outlined,
-            size: AppDimensions.iconSizeXSmall,
-            color: AppColors.error,
-          ),
-          const SizedBox(width: AppDimensions.spaceXSmall),
-          Text(
-            "URGENTE",
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.error,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
+      child: Text(
+        label,
+        style: AppTextStyles.caption.copyWith(
+          color: cor,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }
 
-  /// [uso] Agrupa e exibe o nome do cliente e a descrição sumária do serviço solicitado.
-  Widget _buildClienteInfo(String nomeCliente, String tituloServico) {
+  /// [uso] Agrupa e exibe o nome do cliente e a descrição do serviço, aplicando risco no texto caso concluído.
+  Widget _buildClienteInfo(
+    String nomeCliente,
+    String tituloServico, {
+    required bool isEntregue,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -206,13 +241,21 @@ class OrcamentoCard extends StatelessWidget {
             children: [
               Text(
                 nomeCliente,
-                style: AppTextStyles.titleMedium,
+                style: AppTextStyles.titleMedium.copyWith(
+                  decoration: isEntregue ? TextDecoration.lineThrough : null,
+                  color: isEntregue
+                      ? AppColors.textDisabled
+                      : AppColors.textPrimary,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: AppDimensions.spaceXSmall),
               Text(
                 tituloServico,
-                style: AppTextStyles.bodyMediumSecondary,
+                style: AppTextStyles.bodyMediumSecondary.copyWith(
+                  decoration: isEntregue ? TextDecoration.lineThrough : null,
+                  color: isEntregue ? AppColors.textDisabled : null,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ],
@@ -239,12 +282,11 @@ class OrcamentoCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const AppSectionHeader(
-                icon: Icons.location_on_outlined,
+                icon: AppIcons.endereco,
                 title: 'ENDEREÇO',
               ),
               if (rua.isNotEmpty)
                 Text(
-                  // Interpolação segura de strings geradas no build
                   '$rua, $numero',
                   style: AppTextStyles.bodyMedium.copyWith(
                     fontWeight: FontWeight.w600,
@@ -314,7 +356,7 @@ class OrcamentoCard extends StatelessWidget {
       children: [
         _ActionButton(
           tooltip: 'Ligar',
-          icon: Icons.phone,
+          icon: AppIcons.ligar,
           color: AppColors.textPrimary,
           onPressed: () => LauncherUtils.fazerLigacao(telefone),
         ),
@@ -329,7 +371,7 @@ class OrcamentoCard extends StatelessWidget {
           const SizedBox(height: AppDimensions.spaceMedium),
           _ActionButton(
             tooltip: 'Abrir no Mapa',
-            icon: Icons.map_outlined,
+            icon: AppIcons.mapa,
             color: AppColors.primary,
             onPressed: () => LauncherUtils.abrirGoogleMapsPorEndereco(
               rua: rua,

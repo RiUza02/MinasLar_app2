@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import 'cliente_model.dart';
+
 /// Enum para representar os turnos de agendamento,
 /// evitando o uso de "magic strings".
 enum Turno {
@@ -23,6 +26,9 @@ class Orcamento {
 
   /// ID do cliente relacionado ao orçamento (chave estrangeira indexada).
   final String clienteId;
+
+  /// Objeto do cliente associado (preenchido automaticamente nas consultas com JOIN do Supabase).
+  final Cliente? cliente;
 
   /// Título do serviço (Ex: "Formatação PC", "Troca de Tela").
   final String titulo;
@@ -60,6 +66,7 @@ class Orcamento {
     required this.clienteId,
     required this.titulo,
     required this.dataPega,
+    this.cliente,
     this.horarioDoDia = Turno.tarde,
     this.id,
     this.descricao,
@@ -75,6 +82,7 @@ class Orcamento {
   // MÉTODOS DE SERIALIZAÇÃO E OTIMIZAÇÃO (SUPABASE)
   // ==================================================
   /// Converte o objeto Dart em um [Map] compatível com o Supabase.
+  /// Nota: O campo [cliente] não é enviado ao banco pois representa uma relação de leitura.
   Map<String, dynamic> toMap() {
     return {
       if (id != null) 'id': id,
@@ -94,9 +102,15 @@ class Orcamento {
 
   /// Cria um objeto [Orcamento] a partir de um [Map] (JSON) do Supabase.
   factory Orcamento.fromMap(Map<String, dynamic> map) {
+    // Captura os dados relacionais do cliente vindos do JOIN (tabela 'clientes' ou alias 'cliente')
+    final clienteData = map['clientes'] ?? map['cliente'];
+
     return Orcamento(
       id: map['id']?.toString(),
       clienteId: map['cliente_id']?.toString() ?? '',
+      cliente: clienteData != null && clienteData is Map<String, dynamic>
+          ? Cliente.fromMap(clienteData)
+          : null,
       titulo: map['titulo'] ?? 'Sem Título',
       descricao: map['descricao'],
 
@@ -128,6 +142,7 @@ class Orcamento {
   Orcamento copyWith({
     String? id,
     String? clienteId,
+    Cliente? cliente,
     String? titulo,
     String? descricao,
     DateTime? dataPega,
@@ -142,6 +157,7 @@ class Orcamento {
     return Orcamento(
       id: id ?? this.id,
       clienteId: clienteId ?? this.clienteId,
+      cliente: cliente ?? this.cliente,
       titulo: titulo ?? this.titulo,
       descricao: descricao ?? this.descricao,
       dataPega: dataPega ?? this.dataPega,
@@ -155,6 +171,19 @@ class Orcamento {
     );
   }
 
+  /// [uso] Verifica se o orçamento está atrasado.
+  /// Um orçamento é considerado atrasado se não foi entregue e a data de entrega
+  /// já passou.
+  bool get isAtrasado {
+    if (entregue || dataEntrega == null) {
+      return false;
+    }
+    // Compara apenas a data, ignorando a hora.
+    final hoje = DateUtils.dateOnly(DateTime.now());
+    final dataEntregaDateOnly = DateUtils.dateOnly(dataEntrega!);
+    return dataEntregaDateOnly.isBefore(hoje);
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -162,7 +191,7 @@ class Orcamento {
     return other is Orcamento &&
         other.id == id &&
         other.clienteId == clienteId &&
-        other.clienteId == clienteId &&
+        other.cliente == cliente &&
         other.titulo == titulo &&
         other.descricao == descricao &&
         other.dataPega == dataPega &&
@@ -177,9 +206,8 @@ class Orcamento {
 
   @override
   int get hashCode {
-    // Agrupamento seguro em Object.hash para evitar o limite antigo de argumentos
     return Object.hash(
-      Object.hash(id, clienteId, clienteId, titulo, descricao, dataPega),
+      Object.hash(id, clienteId, cliente, titulo, descricao, dataPega),
       Object.hash(
         dataEntrega,
         valor,

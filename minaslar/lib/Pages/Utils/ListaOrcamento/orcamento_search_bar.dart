@@ -1,10 +1,10 @@
 import '../../../../Core/Design/design_system.dart';
 
 /// [uso] Campo de texto estilizado para buscas em listas.
-class ClienteSearchBar extends StatelessWidget {
+class OrcamentoSearchBar extends StatelessWidget {
   final TextEditingController controller;
 
-  const ClienteSearchBar({super.key, required this.controller});
+  const OrcamentoSearchBar({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +17,7 @@ class ClienteSearchBar extends StatelessWidget {
           controller: controller,
           style: AppTextStyles.bodyMedium,
           decoration: InputDecoration(
-            hintText: "Nome, Endereço ou Telefone...",
+            hintText: "Cliente, valor ou data...",
             hintStyle: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textDisabled,
             ),

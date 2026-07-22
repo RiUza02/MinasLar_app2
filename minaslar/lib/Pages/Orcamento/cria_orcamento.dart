@@ -31,6 +31,7 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
   final _tituloController = TextEditingController();
   final _descricaoController = TextEditingController();
   final _valorController = TextEditingController();
+  final _taxaEntregaController = TextEditingController();
 
   // Estado Local (Substituindo os antigos Controllers externos)
   late DateTime _dataPega;
@@ -51,6 +52,7 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
     _tituloController.dispose();
     _descricaoController.dispose();
     _valorController.dispose();
+    _taxaEntregaController.dispose();
     super.dispose();
   }
 
@@ -111,6 +113,16 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
         valorFinal = double.tryParse(limpo);
       }
 
+      double? taxaEntregaFinal;
+      if (_taxaEntregaController.text.isNotEmpty) {
+        final limpo = _taxaEntregaController.text
+            .replaceAll('R\$', '')
+            .replaceAll('.', '')
+            .replaceAll(',', '.')
+            .trim();
+        taxaEntregaFinal = double.tryParse(limpo);
+      }
+
       final novoOrcamento = Orcamento(
         clienteId: widget.cliente.id!,
         cliente: widget.cliente,
@@ -119,6 +131,7 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
             ? null
             : _descricaoController.text.trim(),
         valor: valorFinal,
+        taxaEntrega: taxaEntregaFinal,
         dataPega: _dataPega,
         dataEntrega: _dataEntrega,
         horarioDoDia: _horarioSelecionado,
@@ -243,6 +256,13 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
                     icon: AppIcons.valor,
                     keyboardType: TextInputType.number,
                   ),
+                  const SizedBox(height: AppDimensions.spaceMedium),
+                  AppTextField(
+                    controller: _taxaEntregaController,
+                    label: 'Taxa de Entrega/Visita (R\$)',
+                    icon: Icons.delivery_dining_outlined,
+                    keyboardType: TextInputType.number,
+                  ),
                 ],
               ),
               const SizedBox(height: AppDimensions.spaceLarge),
@@ -310,7 +330,7 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
                 icone: AppIcons.info,
                 children: [
                   SwitchListTile(
-                    activeThumbColor: AppColors.success,
+                    activeThumbColor: AppColors.primary,
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       "Serviço Concluído?",
@@ -332,7 +352,7 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
                   ),
                   const Divider(color: AppColors.borderLight),
                   SwitchListTile(
-                    activeThumbColor: AppColors.adminColor,
+                    activeThumbColor: AppColors.success,
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       "Garantia / Retorno",

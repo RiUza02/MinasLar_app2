@@ -3,7 +3,8 @@ import '../../Core/Utils/formatters.dart';
 import '../../Core/Widgets/widgets.dart';
 import '../../Features/Modelos/usuario_model.dart';
 
-/// [uso]: Diálogo modal para edição dos dados básicos (nome e telefone) do usuário logado.
+// **[Propósito]** Componente modal (dialog) encapsulado para visualização e edição rápida dos dados de perfil do usuário autenticado.
+// **[Como usar]** final result = await showDialog<Map<String, dynamic>>(context: context, builder: (_) => ChangeInformationsDialog(currentUser: usuario));
 class ChangeInformationsDialog extends StatefulWidget {
   final Usuario currentUser;
 
@@ -22,7 +23,7 @@ class _ChangeInformationsDialogState extends State<ChangeInformationsDialog> {
   @override
   void initState() {
     super.initState();
-    // Inicialização dos controllers com os dados atuais e aplicação da máscara no telefone
+    // **[Inicialização de Dados]** Carrega as informações atuais do usuário e aplica a máscara visual de telefone logo na abertura do modal
     _nomeController = TextEditingController(text: widget.currentUser.nome);
     _telefoneController = TextEditingController(
       text: AppFormatters.telefone.maskText(widget.currentUser.telefone),
@@ -36,7 +37,7 @@ class _ChangeInformationsDialogState extends State<ChangeInformationsDialog> {
     super.dispose();
   }
 
-  /// Valida o formulário, remove as máscaras e retorna os dados atualizados
+  // **[Ação de Salvamento]** Valida os inputs, sanitiza (unmask) os dados formatados e os devolve para a tela chamadora via Navigator.pop
   void _saveAndPop() {
     if (_formKey.currentState!.validate()) {
       final result = {
@@ -60,6 +61,7 @@ class _ChangeInformationsDialogState extends State<ChangeInformationsDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // **[Campo: Nome]** Validação simples para garantir que o usuário não salve o nome em branco
             AppTextField(
               controller: _nomeController,
               label: 'Nome de Usuário',
@@ -67,6 +69,8 @@ class _ChangeInformationsDialogState extends State<ChangeInformationsDialog> {
               validator: (v) => v!.trim().isEmpty ? 'Informe o nome' : null,
             ),
             const SizedBox(height: AppDimensions.spaceLarge),
+
+            // **[Campo: Telefone]** Integra formatação em tempo real e regra de negócio para telefones fixos (10 dígitos) ou celulares (11 dígitos)
             AppTextField(
               controller: _telefoneController,
               label: 'Meu Telefone',

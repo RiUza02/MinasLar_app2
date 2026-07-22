@@ -65,13 +65,21 @@ class _OrcamentosDiaState extends State<OrcamentosDia> {
     return orcamentos;
   }
 
-  int _compararHorarios(dynamic a, dynamic b) {
-    final horarioA = (a['horario_do_dia'] ?? '').toString().toLowerCase();
-    final horarioB = (b['horario_do_dia'] ?? '').toString().toLowerCase();
+  int _getPrioridade(Map<String, dynamic> orcamento) {
+    final bool isUrgente = orcamento['eh_urgente'] == true;
+    final bool isManha =
+        (orcamento['horario_do_dia'] ?? '').toString().toLowerCase() == 'manhã';
 
-    if (horarioA == 'manhã' && horarioB != 'manhã') return -1;
-    if (horarioB == 'manhã' && horarioA != 'manhã') return 1;
-    return 0;
+    if (isUrgente && isManha) return 1; // 1. Urgente e de Manhã
+    if (isManha) return 2; // 2. Apenas de Manhã
+    if (isUrgente && !isManha) return 3; // 3. Urgente e de Tarde
+    return 4; // 4. Apenas de Tarde
+  }
+
+  int _compararHorarios(dynamic a, dynamic b) {
+    final prioridadeA = _getPrioridade(a as Map<String, dynamic>);
+    final prioridadeB = _getPrioridade(b as Map<String, dynamic>);
+    return prioridadeA.compareTo(prioridadeB);
   }
 
   /// Recarrega a lista de agendamentos.

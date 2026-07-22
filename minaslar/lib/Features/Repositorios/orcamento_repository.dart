@@ -114,6 +114,9 @@ class OrcamentoRepository {
           orConditions.add(
             'and(valor.gte.$valorNumerico,valor.lt.${valorNumerico + 1})',
           );
+          orConditions.add(
+            'and(taxa_entrega.gte.$valorNumerico,taxa_entrega.lt.${valorNumerico + 1})',
+          );
         }
 
         // Parsing e filtro de data (Formatos PT-BR ou Ano isolado)

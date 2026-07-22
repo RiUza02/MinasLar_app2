@@ -29,6 +29,7 @@ class Orcamento {
   final DateTime dataPega;
   final DateTime? dataEntrega;
   final double? valor;
+  final double? taxaEntrega;
   final Turno horarioDoDia;
   final bool entregue;
   final bool ehRetorno;
@@ -45,6 +46,7 @@ class Orcamento {
     this.descricao,
     this.dataEntrega,
     this.valor,
+    this.taxaEntrega,
     this.entregue = false,
     this.ehRetorno = false,
     this.ehUrgente = false,
@@ -67,6 +69,7 @@ class Orcamento {
       'data_pega': dataPega.toUtc().toIso8601String(),
       'data_entrega': dataEntrega?.toUtc().toIso8601String(),
       'valor': valor,
+      'taxa_entrega': taxaEntrega,
       'horario_do_dia': horarioDoDia.valor,
       'entregue': entregue,
       'eh_retorno': ehRetorno,
@@ -98,6 +101,9 @@ class Orcamento {
           ? DateTime.tryParse(map['data_entrega'].toString())
           : null,
       valor: map['valor'] != null ? (map['valor'] as num).toDouble() : null,
+      taxaEntrega: map['taxa_entrega'] != null
+          ? (map['taxa_entrega'] as num).toDouble()
+          : null,
       horarioDoDia: Turno.fromString(map['horario_do_dia']),
       entregue: map['entregue'] ?? false,
       ehRetorno: map['eh_retorno'] ?? false,
@@ -123,6 +129,7 @@ class Orcamento {
     DateTime? dataPega,
     DateTime? dataEntrega,
     double? valor,
+    double? taxaEntrega,
     Turno? horarioDoDia,
     bool? entregue,
     bool? ehRetorno,
@@ -138,6 +145,7 @@ class Orcamento {
       dataPega: dataPega ?? this.dataPega,
       dataEntrega: dataEntrega ?? this.dataEntrega,
       valor: valor ?? this.valor,
+      taxaEntrega: taxaEntrega ?? this.taxaEntrega,
       horarioDoDia: horarioDoDia ?? this.horarioDoDia,
       entregue: entregue ?? this.entregue,
       ehRetorno: ehRetorno ?? this.ehRetorno,
@@ -171,6 +179,7 @@ class Orcamento {
         other.dataPega == dataPega &&
         other.dataEntrega == dataEntrega &&
         other.valor == valor &&
+        other.taxaEntrega == taxaEntrega &&
         other.horarioDoDia == horarioDoDia &&
         other.entregue == entregue &&
         other.ehRetorno == ehRetorno &&
@@ -186,6 +195,7 @@ class Orcamento {
       Object.hash(
         dataEntrega,
         valor,
+        taxaEntrega,
         horarioDoDia,
         entregue,
         ehRetorno,

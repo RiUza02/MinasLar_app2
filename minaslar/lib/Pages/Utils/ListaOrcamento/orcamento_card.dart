@@ -147,16 +147,31 @@ class OrcamentoCard extends StatelessWidget {
                   height: AppDimensions.spaceXLarge,
                   color: AppColors.borderLight,
                 ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    valorF,
-                    style: AppTextStyles.bodyLargeBold.copyWith(
-                      color: orcamento.valor != null
-                          ? AppColors.adminColor
-                          : AppColors.textDisabled,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      valorF,
+                      style: AppTextStyles.bodyLargeBold.copyWith(
+                        color: orcamento.valor != null
+                            ? AppColors.adminColor
+                            : AppColors.textDisabled,
+                      ),
                     ),
-                  ),
+                    if (orcamento.taxaEntrega != null &&
+                        orcamento.taxaEntrega! > 0) ...[
+                      const SizedBox(width: AppDimensions.spaceSmall),
+                      Text(
+                        '(+ ${NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(orcamento.taxaEntrega)})',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textDisabled,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ],

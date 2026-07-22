@@ -11,7 +11,8 @@ import '../Utils/Settings/pending_users_button.dart';
 import '../Utils/Settings/settings_app_bar.dart';
 import '../Utils/Settings/settings_body.dart';
 
-/// [uso]: Centraliza as configurações do perfil do usuário e o gerenciamento de membros da equipe.
+// **[Propósito]** Tela central de configurações, permitindo a edição do perfil pessoal do usuário logado e, para administradores, o gerenciamento de acessos (aprovação e revogação) da equipe.
+// **[Como usar]** Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsPage(isAdmin: user.isAdmin)));
 class SettingsPage extends StatefulWidget {
   final bool isAdmin;
 
@@ -24,11 +25,10 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   final _functions = SettingsFunctions();
 
-  // Controle de estado e exceções
+  // **[Estado Local]** Controle de carregamento, erros e listas de usuários
   bool _isLoading = true;
   String _errorMessage = '';
 
-  // Estado local dos usuários
   Usuario? _currentUser;
   List<Usuario> _pendingUsers = [];
   List<Usuario> _authenticatedUsers = [];
@@ -39,7 +39,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _loadData(forceRefresh: false);
   }
 
-  /// Carrega os dados da equipe e sincroniza a sessão do usuário atual
+  // **[Sincronização de Dados]** Busca as informações da equipe e valida a sessão. Intercepta exceções específicas (como divergência de sessão) para forçar o logout se necessário.
   Future<void> _loadData({bool forceRefresh = false}) async {
     if (mounted) {
       setState(() {
@@ -97,7 +97,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  /// Salva as alterações cadastrais de nome e telefone do perfil
+  // **[Ação: Editar Perfil]** Atualiza os dados básicos do usuário e reflete a mudança no estado local caso haja sucesso.
   Future<void> _saveProfile({
     required String newName,
     required String newPhone,
@@ -141,7 +141,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  /// Exibe o diálogo para edição das informações do perfil
+  // **[Modal]** Exibe o formulário para edição do perfil do usuário atual
   void _showEditProfileDialog() async {
     if (_currentUser == null) return;
 
@@ -158,7 +158,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  /// Exibe a caixa de confirmação antes de revogar o acesso de um usuário
+  // **[Ação: Revogar Acesso]** Interação em duas etapas para garantir que a revogação de um membro da equipe seja intencional (Apenas Admin).
   void _showRevokeAccessDialog(Usuario userToRevoke) async {
     final bool? confirmed = await showDialog<bool>(
       context: context,
@@ -190,7 +190,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  /// Revoga o acesso do usuário selecionado e reordena as listas locais
+  // **[Processamento: Revogação]** Move o usuário da lista de autenticados para a de pendentes após revogação no backend.
   Future<void> _revokeUserAccess(Usuario userToRevoke) async {
     setState(() => _isLoading = true);
     try {
@@ -219,7 +219,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  /// Exibe o diálogo para aprovação de solicitações pendentes
+  // **[Ação: Aprovar Pendentes]** Abre a modal de listagem de aprovação. Em caso de sucesso, atualiza localmente as listas e as reordena (Admins primeiro, depois ordem alfabética).
   void _showPendingUsersDialog() async {
     final Usuario? approvedUser = await showDialog(
       context: context,
@@ -249,7 +249,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  /// Processa o logout e redireciona o fluxo para a tela de autenticação
+  // **[Ação: Logout]** Encerra a sessão atual e devolve o fluxo de navegação para a porta de autenticação.
   Future<void> _logout() async {
     setState(() => _isLoading = true);
     await _functions.logout();
@@ -264,12 +264,14 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    // **[Identidade Visual]** Administradores veem um tom diferente para distinguir seus privilégios elevados.
     final themeColor = widget.isAdmin
         ? AppColors.primaryAlternative
         : AppColors.primary;
 
     return Scaffold(
       appBar: SettingsAppBar(themeColor: themeColor, onLogout: _logout),
+      // O botão flutuante de pendências só é montado para admins quando há contas aguardando aprovação
       floatingActionButton: widget.isAdmin && _pendingUsers.isNotEmpty
           ? PendingUsersButton(
               count: _pendingUsers.length,

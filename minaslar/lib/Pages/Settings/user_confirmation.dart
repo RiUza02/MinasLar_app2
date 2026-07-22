@@ -4,7 +4,8 @@ import '../../Core/Widgets/widgets.dart';
 import '../../Features/Modelos/usuario_model.dart';
 import '../Utils/Settings/settings_functions.dart';
 
-/// [uso]: Diálogo modal para listar e aprovar usuários com cadastro pendente.
+// **[Propósito]** Diálogo modal para listar e aprovar usuários com cadastro pendente, exclusivo para administradores.
+// **[Como usar]** final Usuario? approvedUser = await showDialog(context: context, builder: (_) => PendingUsersDialog(pendingUsers: list, functions: controller));
 class PendingUsersDialog extends StatefulWidget {
   final List<Usuario> pendingUsers;
   final SettingsFunctions functions;
@@ -22,13 +23,13 @@ class PendingUsersDialog extends StatefulWidget {
 class _PendingUsersDialogState extends State<PendingUsersDialog> {
   bool _isApproving = false;
 
-  /// [uso]: Modifica o status do usuário para aprovado e fecha o modal retornando o objeto atualizado.
+  // **[Ação: Aprovar Usuário]** Modifica o status do usuário para aprovado via backend e fecha o modal, retornando o objeto atualizado para sincronização de estado na tela chamadora.
   Future<void> _approveUser(Usuario userToApprove) async {
     setState(() => _isApproving = true);
     try {
       final approvedUser = await widget.functions.approveUser(userToApprove);
       if (mounted) {
-        // Retorna o usuário aprovado para atualização do estado na tela pai
+        // Retorna o usuário aprovado para atualização imediata do estado na tela pai
         Navigator.of(context).pop(approvedUser);
       }
     } catch (e) {
@@ -51,6 +52,7 @@ class _PendingUsersDialogState extends State<PendingUsersDialog> {
       title: const Text('Aprovações Pendentes'),
       content: SizedBox(
         width: double.maxFinite,
+        // Altera para o indicador de progresso para evitar múltiplos toques acidentais
         child: _isApproving ? _buildLoadingIndicator() : _buildUsersList(),
       ),
       actions: [
@@ -62,7 +64,7 @@ class _PendingUsersDialogState extends State<PendingUsersDialog> {
     );
   }
 
-  /// [uso]: Exibe um indicador de carregamento durante o processo de aprovação.
+  // **[Estado Visual: Carregando]** Exibe um indicador de progresso limpo e centralizado enquanto a requisição de aprovação está em andamento.
   Widget _buildLoadingIndicator() {
     return const Center(
       heightFactor: 2,
@@ -70,7 +72,7 @@ class _PendingUsersDialogState extends State<PendingUsersDialog> {
     );
   }
 
-  /// [uso]: Constrói a lista com os cartões dos usuários pendentes de aprovação.
+  // **[Subcomponente: Lista]** Constrói a lista dinâmica com os cartões dos usuários aguardando aprovação, embutindo um botão de ação "Permitir" em cada item.
   Widget _buildUsersList() {
     return ListView.builder(
       shrinkWrap: true,
@@ -95,7 +97,7 @@ class _PendingUsersDialogState extends State<PendingUsersDialog> {
     );
   }
 
-  /// [uso]: Exibe uma notificação de erro no rodapé em caso de falha na requisição.
+  // **[Feedback Visual]** Exibe um alerta de erro isolado no rodapé da aplicação caso a aprovação não possa ser concluída.
   void _showErrorSnackBar(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(

@@ -258,7 +258,7 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
                           controller: _numeroController,
                           label: 'Nº',
                           icon: AppIcons.numeroCasa,
-                          keyboardType: TextInputType.text,
+                          keyboardType: TextInputType.number,
                           validator: (v) => v!.isEmpty ? 'Req.' : null,
                         ),
                       ),

@@ -24,6 +24,7 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
   late final TextEditingController _tituloController;
   late final TextEditingController _descricaoController;
   late final TextEditingController _valorController;
+  late final TextEditingController _taxaEntregaController;
 
   late DateTime _dataPega;
   DateTime? _dataEntrega;
@@ -43,7 +44,15 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
     );
     _valorController = TextEditingController(
       text: _orcamentoOriginal.valor != null
-          ? _orcamentoOriginal.valor!.toStringAsFixed(2)
+          ? NumberFormat('#,##0.00', 'pt_BR').format(_orcamentoOriginal.valor!)
+          : '',
+    );
+    _taxaEntregaController = TextEditingController(
+      text: _orcamentoOriginal.taxaEntrega != null
+          ? NumberFormat(
+              '#,##0.00',
+              'pt_BR',
+            ).format(_orcamentoOriginal.taxaEntrega!)
           : '',
     );
 
@@ -60,6 +69,7 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
     _tituloController.dispose();
     _descricaoController.dispose();
     _valorController.dispose();
+    _taxaEntregaController.dispose();
     super.dispose();
   }
 
@@ -113,12 +123,23 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
         valorFinal = double.tryParse(limpo);
       }
 
+      double? taxaEntregaFinal;
+      if (_taxaEntregaController.text.isNotEmpty) {
+        final limpo = _taxaEntregaController.text
+            .replaceAll('R\$', '')
+            .replaceAll('.', '')
+            .replaceAll(',', '.')
+            .trim();
+        taxaEntregaFinal = double.tryParse(limpo);
+      }
+
       final dadosAtualizados = {
         'titulo': _tituloController.text.toTitleCase(),
         'descricao': _descricaoController.text.trim().isEmpty
             ? null
             : _descricaoController.text.trim(),
         'valor': valorFinal,
+        'taxa_entrega': taxaEntregaFinal,
         'data_pega': _dataPega.toIso8601String(),
         'data_entrega': _dataEntrega?.toIso8601String(),
         'horario_do_dia': _horarioSelecionado.valor,
@@ -203,6 +224,13 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
                     icon: AppIcons.valor,
                     keyboardType: TextInputType.number,
                   ),
+                  const SizedBox(height: AppDimensions.spaceMedium),
+                  AppTextField(
+                    controller: _taxaEntregaController,
+                    label: 'Taxa de Entrega/Visita (R\$)',
+                    icon: Icons.delivery_dining_outlined,
+                    keyboardType: TextInputType.number,
+                  ),
                 ],
               ),
               const SizedBox(height: AppDimensions.spaceLarge),
@@ -268,7 +296,7 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
                 icone: AppIcons.info,
                 children: [
                   SwitchListTile(
-                    activeThumbColor: AppColors.success,
+                    activeThumbColor: AppColors.primary,
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       "Serviço Concluído?",
@@ -290,7 +318,7 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
                   ),
                   const Divider(color: AppColors.borderLight),
                   SwitchListTile(
-                    activeThumbColor: AppColors.adminColor,
+                    activeThumbColor: AppColors.success,
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       "Garantia / Retorno",

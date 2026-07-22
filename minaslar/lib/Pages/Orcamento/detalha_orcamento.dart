@@ -5,6 +5,7 @@ import '../../Core/Utils/formatters.dart';
 import '../../Core/Widgets/widgets.dart';
 import '../../Features/Modelos/orcamento_model.dart';
 import '../../Features/Repositorios/orcamento_repository.dart';
+import '../Cliente/detalha_cliente.dart';
 import 'edita_orcamento.dart';
 
 class DetalhesOrcamento extends StatefulWidget {
@@ -449,45 +450,105 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
                         ],
                       ),
                     ),
+                    if (_orcamento.taxaEntrega != null &&
+                        _orcamento.taxaEntrega! > 0)
+                      Container(
+                        margin: const EdgeInsets.only(
+                          top: AppDimensions.spaceLarge,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppDimensions.spaceLarge,
+                          horizontal: AppDimensions.spaceXLarge,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardBackground,
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusLarge,
+                          ),
+                          border: Border.all(color: AppColors.borderLight),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "TAXA DE VISITA",
+                              style: AppTextStyles.cardHeader,
+                            ),
+                            Text(
+                              NumberFormat.currency(
+                                locale: 'pt_BR',
+                                symbol: 'R\$ ',
+                              ).format(_orcamento.taxaEntrega!),
+                              style: AppTextStyles.titleLarge.copyWith(
+                                color: AppColors.success,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     const SizedBox(height: AppDimensions.spaceLarge),
 
                     if (_orcamento.cliente != null) ...[
-                      AppCardContainer(
-                        titulo: 'CLIENTE VINCULADO',
-                        icone: AppIcons.clientes,
-                        children: [
-                          Row(
-                            children: [
-                              const CircleAvatar(
-                                backgroundColor: AppColors.inputBackground,
-                                child: Icon(
-                                  AppIcons.cliente,
-                                  color: AppColors.primaryAlternative,
-                                ),
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DetalhesClientePage(
+                                cliente: _orcamento.cliente!,
                               ),
-                              const SizedBox(width: AppDimensions.spaceMedium),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _orcamento.cliente!.nome,
-                                      style: AppTextStyles.bodyLargeBold,
+                            ),
+                          ),
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusLarge,
+                          ),
+                          child: AppCardContainer(
+                            titulo: 'CLIENTE VINCULADO',
+                            icone: AppIcons.clientes,
+                            children: [
+                              Row(
+                                children: [
+                                  const CircleAvatar(
+                                    backgroundColor: AppColors.inputBackground,
+                                    child: Icon(
+                                      AppIcons.cliente,
+                                      color: AppColors.primaryAlternative,
                                     ),
-                                    Text(
-                                      AppFormatters.telefone.maskText(
-                                        _orcamento.cliente!.telefone,
-                                      ),
-                                      style: AppTextStyles.bodySmall.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
+                                  ),
+                                  const SizedBox(
+                                    width: AppDimensions.spaceMedium,
+                                  ),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _orcamento.cliente!.nome,
+                                          style: AppTextStyles.bodyLargeBold,
+                                        ),
+                                        Text(
+                                          AppFormatters.telefone.maskText(
+                                            _orcamento.cliente!.telefone,
+                                          ),
+                                          style: AppTextStyles.bodySmall
+                                              .copyWith(
+                                                color: AppColors.textSecondary,
+                                              ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                  const Icon(
+                                    AppIcons.navegar,
+                                    color: AppColors.textDisabled,
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
                     ],
                   ],

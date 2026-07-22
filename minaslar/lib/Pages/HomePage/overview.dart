@@ -146,12 +146,8 @@ class _OverViewState extends State<OverView>
                 final orcamento = orcamentos[index];
                 return OrcamentoCard(
                   orcamento: orcamento,
-                  onCardTap: () {
-                    AppFeedback.show(
-                      context,
-                      'Função de detalhes ainda não implementada.',
-                    );
-                  },
+                  isAdmin: widget.isAdmin,
+                  onRefresh: _atualizarLista,
                 );
               },
             ),

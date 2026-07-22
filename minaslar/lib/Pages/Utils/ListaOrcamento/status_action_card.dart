@@ -69,7 +69,7 @@ class StatusActionCard extends StatelessWidget {
       lista.add(
         _StatusItem(
           label: "GARANTIA",
-          color: AppColors.adminColor,
+          color: AppColors.success,
           icon: AppIcons.retorno,
         ),
       );

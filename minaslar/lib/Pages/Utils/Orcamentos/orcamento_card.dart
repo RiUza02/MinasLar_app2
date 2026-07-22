@@ -2,18 +2,35 @@ import '../../../Core/Design/design_system.dart';
 import '../../../Core/Services/communication.dart';
 import '../../../Core/Design/borders.dart';
 import '../../../Core/Widgets/widgets.dart';
+import '../../Orcamento/detalha_orcamento.dart';
 
 // **[Propósito]** Componente visual em formato de cartão utilizado na página principal (HomePage) para exibir os detalhes essenciais de um orçamento. Implementa uma lógica rigorosa de 6 níveis de prioridade (Urgente, Atrasado, Garantia, Pendente, Concluído e Sem data) que define o destaque visual (cores e bordas) e os marcadores de status. Apresenta também informações de cliente, endereço de atendimento e atalhos de ações rápidas.
-// **[Como usar]** OrcamentoCard(orcamento: mapDoOrcamento, onCardTap: () => _abrirDetalhesDoOrcamento());
+// **[Como usar]** OrcamentoCard(orcamento: mapDoOrcamento, isAdmin: true, onRefresh: () => _recarregarLista());
 class OrcamentoCard extends StatelessWidget {
   final Map<String, dynamic> orcamento;
-  final VoidCallback onCardTap;
+  final bool isAdmin;
+  final VoidCallback? onRefresh;
 
   const OrcamentoCard({
     super.key,
     required this.orcamento,
-    required this.onCardTap,
+    required this.isAdmin,
+    this.onRefresh,
   });
+
+  Future<void> _navegarParaDetalhes(BuildContext context) async {
+    final foiModificado = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            DetalhesOrcamento(orcamentoInicial: orcamento, isAdmin: isAdmin),
+      ),
+    );
+
+    if (foiModificado == true) {
+      onRefresh?.call();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +128,7 @@ class OrcamentoCard extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: onCardTap,
+        onTap: () => _navegarParaDetalhes(context),
         borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
         child: IntrinsicHeight(
           child: Row(

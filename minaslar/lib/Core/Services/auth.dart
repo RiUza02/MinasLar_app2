@@ -4,8 +4,8 @@ import '../Design/design_system.dart';
 import '../../Pages/CadastroLogin/login.dart';
 import '../../Pages/HomePage/home_page.dart';
 
-/// **[Uso]**: Como a primeira página carregada no `main.dart`. Ela atua como o guarda de trânsito
-/// inicial do app, decidindo se manda o usuário para o Login ou para a Home com base na segurança do aparelho.
+// **[Propósito]** Atua como o guarda de trânsito inicial no `main.dart`, direcionando o usuário para a Home ou Login com base na sessão e biometria/PIN.
+// **[Como usar]** home: const AuthGatePage() (Defina como a rota inicial da aplicação).
 class AuthGatePage extends StatefulWidget {
   const AuthGatePage({super.key});
 
@@ -23,34 +23,34 @@ class _AuthGatePageState extends State<AuthGatePage> {
     _verificarAcesso();
   }
 
-  /// **[Uso]** Executa o fluxo de validação local da sessão e dispara a checagem de biometria ou PIN do sistema operacional.
+  // **[Propósito]** Executa a leitura da sessão local e dispara a checagem nativa de biometria ou senha do dispositivo.
   Future<void> _verificarAcesso() async {
     try {
-      // Lê os tokens de persistência criptografados
+      // Lê as credenciais salvas no armazenamento seguro e criptografado do dispositivo.
       final usuarioSalvo = await _storage.read(key: 'usuario_logado');
       final isAdminString = await _storage.read(key: 'is_admin');
       final isAdmin = isAdminString == 'true';
 
       if (!mounted) return;
 
-      // Sem sessão salva, manda direto para a tela de identificação manual
+      // Se não houver sessão ativa salva, redireciona imediatamente para a tela de login manual.
       if (usuarioSalvo == null || usuarioSalvo.isEmpty) {
         _irParaLogin();
         return;
       }
 
-      // Valida se o smartphone possui suporte a travas de segurança ativas
+      // **[Uso]** Verifica se o hardware suporta e possui sensores biométricos ou senha de tela habilitados.
       final podeAutenticar =
           await _localAuth.canCheckBiometrics ||
           await _localAuth.isDeviceSupported();
 
-      // Entra direto caso o dispositivo do usuário não possua nenhuma senha de tela configurada
+      // Se o dispositivo não tiver nenhuma trava de segurança nativa, libera o acesso direto.
       if (!podeAutenticar) {
         _irParaHome(usuarioSalvo, isAdmin);
         return;
       }
 
-      // Abre a janela nativa do sistema (FaceID, TouchID ou PIN padrão)
+      // Aciona o prompt nativo do sistema operacional (FaceID, TouchID ou PIN).
       final autenticado = await _localAuth.authenticate(
         localizedReason:
             'Toque no sensor ou use a senha do celular para entrar no sistema',
@@ -58,19 +58,19 @@ class _AuthGatePageState extends State<AuthGatePage> {
 
       if (!mounted) return;
 
-      // Envia para a Home se passou na biometria; caso contrário, joga pro Login
       if (autenticado) {
         _irParaHome(usuarioSalvo, isAdmin);
       } else {
         _irParaLogin();
       }
     } catch (e) {
-      // Qualquer falha de hardware ou erro crítico limpa o fluxo mandando para o login manual
+      // Falhas de leitura do storage ou cancelamentos de hardware encerram o fluxo direcionando para o login.
       if (mounted) _irParaLogin();
     }
   }
 
-  /// **[Uso]** Redireciona o usuário para o painel principal (Overview), limpando todo o histórico de rotas anterior.
+  // **[Propósito]** Redireciona para o painel principal, removendo todo o histórico de navegação anterior da memória.
+  // **[Parâmetros]** nome (String) -> Nome do usuário recuperado do storage; isAdmin (bool) -> Define o nível de permissão da UI.
   void _irParaHome(String nome, bool isAdmin) {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
@@ -80,7 +80,7 @@ class _AuthGatePageState extends State<AuthGatePage> {
     );
   }
 
-  /// **[Uso]** Substitui a tela de carregamento atual pela tela de login tradicional.
+  // **[Propósito]** Redireciona para o login manual, substituindo a tela de carregamento atual na pilha de rotas.
   void _irParaLogin() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -89,7 +89,7 @@ class _AuthGatePageState extends State<AuthGatePage> {
 
   @override
   Widget build(BuildContext context) {
-    // Tela limpa de transição enquanto lê o storage e processa os sensores de segurança
+    // Exibe um feedback visual de carregamento neutro enquanto a verificação em segundo plano ocorre.
     return const Scaffold(
       backgroundColor: AppColors.background,
       body: Center(child: CircularProgressIndicator(color: AppColors.primary)),

@@ -1,48 +1,32 @@
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import '../Design/design_system.dart';
 
-/// Campo de entrada de dados (Input) padronizado e estilizado para o ecossistema do aplicativo.
-///
-/// **[Onde usar]**: Em absolutamente todos os formulários do app (Login, Cadastro, Configurações, etc.),
-/// substituindo de forma mandatória o [TextFormField] ou [TextField] nativos do Flutter.
+// **[Propósito]** Campo de entrada de texto padronizado e customizado com os tokens visuais do Design System.
+// **[Como usar]** AppTextField(controller: _emailController, label: 'E-mail', icon: Icons.email);
 class AppTextField extends StatelessWidget {
-  /// Controlador responsável pela captura e gerenciamento do texto digitado.
+  // **[Parâmetros]** controller -> Gerencia o texto digitado; label -> Texto descritivo do campo; icon -> Ícone de identificação visual.
   final TextEditingController controller;
-
-  /// Texto descritivo exibido como rótulo do campo (ex: "E-mail", "Senha").
   final String label;
-
-  /// Ícone de identificação visual posicionado no início do campo.
   final IconData icon;
 
-  /// Oculta os caracteres digitados. Ideal para mascarar senhas.
+  // **[Parâmetros]** obscureText -> Oculta os caracteres (ex: senhas); keyboardType -> Define o teclado do OS (e-mail, numérico, etc.).
   final bool obscureText;
-
-  /// Configura a variante do teclado nativo do dispositivo (ex: numérico, e-mail).
   final TextInputType keyboardType;
 
-  /// Lista de máscaras de formatação visual (ex: máscaras de CPF ou Telefone).
+  // **[Parâmetros]** inputFormatters -> Aplica máscaras visuais (CPF, telefone); validator -> Função de validação de formulário.
   final List<MaskTextInputFormatter>? inputFormatters;
-
-  /// Bloco de lógica para validação de erros (regras de campos obrigatórios, formatos, etc.).
   final String? Function(String?)? validator;
 
-  /// Evento disparado imediatamente a cada modificação do texto no input.
+  // **[Parâmetros]** onChanged -> Callback disparado a cada alteração no texto; suffixIcon -> Ícone interativo à direita (ex: ver senha).
   final void Function(String)? onChanged;
-
-  /// Elemento interativo opcional posicionado no final do campo (ex: botão de alternar visibilidade da senha).
   final Widget? suffixIcon;
 
-  /// Texto de dica ou exemplo exibido enquanto o campo estiver vazio (ex: "000.000.000-00").
+  // **[Parâmetros]** hintText -> Texto de dica com o campo vazio; textInputAction -> Botão de ação do teclado (concluir, avançar).
   final String? hintText;
-
-  /// Define o comportamento do botão de ação do teclado virtual (ex: Avançar, Concluir).
   final TextInputAction? textInputAction;
 
-  /// Evento executado no momento em que o usuário confirma a ação final no teclado.
+  // **[Parâmetros]** onFieldSubmitted -> Callback disparado ao confirmar no teclado; maxLines -> Altura em linhas do campo (padrão: 1).
   final void Function(String)? onFieldSubmitted;
-
-  /// Número de linhas que o campo de texto pode ter. O padrão é 1.
   final int maxLines;
 
   const AppTextField({
@@ -74,14 +58,14 @@ class AppTextField extends StatelessWidget {
       textInputAction: textInputAction,
       onFieldSubmitted: onFieldSubmitted,
       maxLines: maxLines,
-      // Aplica a tipografia padrão para os dados inseridos pelo usuário
+      // Aplica a tipografia padronizada no texto inserido pelo usuário.
       style: AppTextStyles.bodyMedium,
       decoration: InputDecoration(
         labelText: label,
         labelStyle: AppTextStyles.inputLabel,
         hintText: hintText,
         hintStyle: AppTextStyles.inputHint,
-        // Ícone inicial com a identidade visual primária do projeto
+        // Ícone fixo à esquerda estilizado com a cor primária da aplicação.
         prefixIcon: Icon(
           icon,
           color: AppColors.primary,

@@ -1,33 +1,16 @@
-/// Modelo que representa as finanças consolidadas de um mês/ano no sistema
+// **[Propósito]** Entidade imutável para gestão e relatórios do fechamento financeiro e métricas consolidadas mensais.
+// **[Como usar]** final financas = Financas.fromMap(jsonSupabase); / final payload = financas.toMap();
 class Financas {
-  /// ID do registro no Supabase (nulo durante a criação)
   final String? id;
-
-  /// Mês de referência (ex: 10)
   final int mes;
-
-  /// Ano de referência (ex: 2024)
   final int ano;
-
-  /// Valor total faturado no mês
   final double faturamento;
-
-  /// Quantidade de orçamentos gerados no período da manhã/dia
   final int orcamentosDia;
-
-  /// Quantidade de orçamentos gerados no período da tarde
   final int orcamentosTarde;
-
-  /// Total geral de orçamentos criados no mês
   final int totalOrcamentos;
-
-  /// Quantidade de novos clientes cadastrados no mês
   final int novosClientes;
-
-  /// Quantidade de acionamentos de garantia (retornos) no mês
   final int retornosGarantia;
 
-  /// Construtor do modelo
   const Financas({
     this.id,
     required this.mes,
@@ -44,7 +27,9 @@ class Financas {
   // MÉTODOS DE SERIALIZAÇÃO (SUPABASE)
   // ==================================================
 
-  /// Converte o objeto Dart num Map para envio ao Supabase
+  // **[Propósito]** Converte o objeto [Financas] em um Map para inclusão ou atualização de relatórios no banco de dados.
+  // **[Retorno]** Map<String, dynamic> -> Estrutura pronta para persistência na tabela de finanças.
+  // **[Como usar]** await supabase.from('financas').insert(financas.toMap());
   Map<String, dynamic> toMap() {
     return {
       'mes': mes,
@@ -58,7 +43,10 @@ class Financas {
     };
   }
 
-  /// Cria um objeto Financas a partir de um Map retornado pelo Supabase
+  // **[Propósito]** Factory constructor para desserializar os dados do fechamento mensal vindos do Supabase.
+  // **[Parâmetros]** map (Map<String, dynamic>) -> Dados de finanças retornados do banco.
+  // **[Retorno]** Financas -> Instância com tratamento contra valores nulos e parsing seguro de números.
+  // **[Como usar]** final financaMensal = Financas.fromMap(response.data.first);
   factory Financas.fromMap(Map<String, dynamic> map) {
     return Financas(
       id: map['id']?.toString(),
@@ -77,8 +65,8 @@ class Financas {
   // MÉTODOS DE CÓPIA E COMPARAÇÃO
   // ==================================================
 
-  /// Cria uma cópia deste registo de finanças, alterando apenas os campos desejados.
-  /// Útil para editar os dados sem mutar o objeto original.
+  // **[Propósito]** Gera uma cópia do registro de [Financas], atualizando pontualmente os atributos passados.
+  // **[Como usar]** final atualizado = financas.copyWith(faturamento: 15000.0);
   Financas copyWith({
     String? id,
     int? mes,
@@ -103,8 +91,7 @@ class Financas {
     );
   }
 
-  /// Compara se dois objetos Financas são iguais pelo CONTEÚDO
-  /// e não pela referência de memória.
+  // **[Propósito]** Compara se dois registros de [Financas] possuem valores equivalentes em todas as suas métricas.
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -121,18 +108,19 @@ class Financas {
         other.retornosGarantia == retornosGarantia;
   }
 
-  /// Gera um código hash único baseado nos dados das finanças.
-  /// Necessário para usar o objeto em Sets ou como chave de Maps.
+  // **[Propósito]** Gera o hash numérico do objeto agrupando seus atributos para garantir integridade em coleções (Set/Map).
   @override
   int get hashCode {
-    return id.hashCode ^
-        mes.hashCode ^
-        ano.hashCode ^
-        faturamento.hashCode ^
-        orcamentosDia.hashCode ^
-        orcamentosTarde.hashCode ^
-        totalOrcamentos.hashCode ^
-        novosClientes.hashCode ^
-        retornosGarantia.hashCode;
+    return Object.hash(
+      id,
+      mes,
+      ano,
+      faturamento,
+      orcamentosDia,
+      orcamentosTarde,
+      totalOrcamentos,
+      novosClientes,
+      retornosGarantia,
+    );
   }
 }

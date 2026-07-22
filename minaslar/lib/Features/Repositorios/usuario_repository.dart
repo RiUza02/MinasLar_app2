@@ -1,19 +1,25 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../Modelos/usuario_model.dart';
 
+// **[Propósito]** Repositório responsável pela consulta, salvamento, busca por telefone e gerenciamento de cache em RAM dos usuários e técnicos.
+// **[Como usar]** final usuarioRepo = UsuarioRepository(); / final tecnicos = await usuarioRepo.listarTodos();
 class UsuarioRepository {
   final _supabase = Supabase.instance.client;
 
+  // Gerenciamento de Cache em Memória (RAM)
   static List<Usuario>? _cacheTecnicos;
   static DateTime? _ultimaConsultaCache;
   static const Duration _duracaoCache = Duration(minutes: 10);
 
+  // **[Propósito]** Invalida o cache local em memória para forçar uma nova consulta no banco na próxima requisição.
   void invalidarCache() {
     _cacheTecnicos = null;
     _ultimaConsultaCache = null;
   }
 
-  /// Busca todos os técnicos para listagens gerais (com Cache em RAM).
+  // **[Propósito]** Busca todos os usuários/técnicos cadastrados, utilizando cache em RAM com validade de 10 minutos para otimizar requisições.
+  // **[Parâmetros]** forcarAtualizacao (bool) -> Se verdadeiro, ignora o cache atual e consulta diretamente o Supabase.
+  // **[Retorno]** Future<List<Usuario>> -> Lista de usuários ordenados por hierarquia de permissão (administradores primeiro).
   Future<List<Usuario>> listarTodos({bool forcarAtualizacao = false}) async {
     final agora = DateTime.now();
 
@@ -29,7 +35,6 @@ class UsuarioRepository {
         .select()
         .order('is_admin', ascending: true);
 
-    // Mapeamento seguro convertendo explicitamente cada item
     final lista = (resposta as List<dynamic>)
         .map((map) => Usuario.fromMap(map as Map<String, dynamic>))
         .toList();
@@ -40,7 +45,9 @@ class UsuarioRepository {
     return lista;
   }
 
-  /// Busca um usuário específico pelo telefone limpo.
+  // **[Propósito]** Realiza a busca de um único usuário através do seu número de telefone sanitizado.
+  // **[Parâmetros]** telefone (String) -> Número de telefone (com ou sem formatação de caracteres especiais).
+  // **[Retorno]** Future<Usuario?> -> Instância do usuário encontrado ou null caso não exista registro.
   Future<Usuario?> buscarPorTelefone(String telefone) async {
     final telefoneLimpo = telefone.replaceAll(RegExp(r'[^0-9]'), '');
 
@@ -60,7 +67,9 @@ class UsuarioRepository {
     }
   }
 
-  /// Busca técnicos por Nome ou Telefone com suporte a cache local e busca remota resiliente.
+  // **[Propósito]** Pesquisa usuários por nome ou telefone com inteligência de filtro local (se houver cache) ou consulta remota resiliente.
+  // **[Parâmetros]** termo (String) -> Nome ou número de telefone para filtragem.
+  // **[Retorno]** Future<List<Usuario>> -> Lista filtrada contendo até 20 registros compatíveis.
   Future<List<Usuario>> buscarPorNomeOuTelefone(String termo) async {
     final termoLimpo = termo.trim();
 
@@ -68,6 +77,7 @@ class UsuarioRepository {
       return listarTodos();
     }
 
+    // Filtragem rápida em RAM caso o cache esteja ativo
     if (_cacheTecnicos != null) {
       final termoMinusculo = termoLimpo.toLowerCase();
       final termoNumerico = termoLimpo.replaceAll(RegExp(r'[^0-9]'), '');
@@ -80,6 +90,7 @@ class UsuarioRepository {
       }).toList();
     }
 
+    // Consulta direta ao Supabase caso o cache esteja vazio
     final termoNumerico = termoLimpo.replaceAll(RegExp(r'[^0-9]'), '');
     String filtroOr = "nome.ilike.%$termoLimpo%";
 
@@ -99,7 +110,8 @@ class UsuarioRepository {
         .toList();
   }
 
-  /// Salva ou atualiza um técnico e limpa o cache da RAM automaticamente.
+  // **[Propósito]** Cadastra ou atualiza as informações do usuário no banco e invalida o cache local automaticamente.
+  // **[Parâmetros]** usuario (Usuario) -> Instância do modelo do usuário com os dados a serem salvos.
   Future<void> salvarUsuario(Usuario usuario) async {
     await _supabase.from('usuarios').upsert(usuario.toMap());
     invalidarCache();

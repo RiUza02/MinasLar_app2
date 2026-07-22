@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -149,25 +148,6 @@ class _AgendaPageState extends State<AgendaPage>
     }
   }
 
-  void _irParaHoje() {
-    final hoje = DateTime.now();
-    final mudouDeMes =
-        hoje.month != _focusedDay.month || hoje.year != _focusedDay.year;
-
-    setState(() {
-      _focusedDay = hoje;
-      _selectedDay = hoje;
-    });
-
-    if (mudouDeMes) {
-      _carregarEventosDoMes(hoje);
-    } else {
-      setState(() {
-        _eventosSelecionados = _getEventosDoDia(hoje);
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -201,20 +181,6 @@ class _AgendaPageState extends State<AgendaPage>
           const SizedBox(height: AppDimensions.spaceXLarge),
           _buildEventsList(),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCalendarHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spaceSmall),
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: IconButton(
-          icon: const Icon(Icons.today, color: AppColors.textPrimary),
-          tooltip: "Ir para Hoje",
-          onPressed: _irParaHoje,
-        ),
       ),
     );
   }

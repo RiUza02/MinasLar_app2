@@ -1,13 +1,16 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
-import '../Modelos/orcamento_model.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../Pages/HomePage/lista_orcamento.dart';
+import '../Modelos/orcamento_model.dart';
 
-/// Repositório responsável pela consulta, salvamento e filtros de orçamentos no Supabase.
+// **[Propósito]** Repositório responsável pela consulta, salvamento, paginação, filtros avançados e lógica de prioridade de orçamentos no Supabase.
+// **[Como usar]** final orcamentoRepo = OrcamentoRepository(); / final lista = await orcamentoRepo.buscarOrcamentosDoDia();
 class OrcamentoRepository {
   final _supabase = Supabase.instance.client;
 
-  /// [uso]: Realiza buscas de orçamentos filtrando por texto do cliente (Nome, Rua, Bairro) e intervalo de datas.
+  // **[Propósito]** Busca avançada de orçamentos aplicando filtros por termo de pesquisa do cliente e intervalo de datas.
+  // **[Parâmetros]** termoPesquisa (String) -> Filtro de texto para nome, rua ou bairro; dataInicio (DateTime?) -> Data inicial do filtro; dataFim (DateTime?) -> Data final do filtro.
+  // **[Retorno]** Future<List<Orcamento>> -> Lista de orçamentos encontrados com dados relacionais de clientes.
   Future<List<Orcamento>> buscarOrcamentosAvancado({
     String termoPesquisa = '',
     DateTime? dataInicio,
@@ -58,7 +61,9 @@ class OrcamentoRepository {
         .toList();
   }
 
-  /// [uso]: Busca uma lista paginada de orçamentos com suporte a busca múltipla combinada e ordenação avançada.
+  // **[Propósito]** Busca paginada de orçamentos com suporte a termos combinados (nome, valor, data) e regras estritas de ordenação.
+  // **[Parâmetros]** page (int) -> Número da página (base 1); pageSize (int) -> Registros por página; termo (String) -> Termo de busca rápida; sortColumn (OrcamentoSortColumn) -> Coluna para ordenação; ascending (bool) -> Direção da ordenação.
+  // **[Retorno]** Future<List<Orcamento>> -> Lista paginada e reordenada de acordo com as prioridades da regra de negócio.
   Future<List<Orcamento>> buscarOrcamentosPaginados({
     required int page,
     required int pageSize,
@@ -84,26 +89,26 @@ class OrcamentoRepository {
         break;
     }
 
-    // 1. Query base com chave estrangeira explícita
+    // Query base relacionando orçamentos e clientes através de JOIN
     var query = _supabase
         .from('orcamentos')
         .select('*, clientes!cliente_id!inner(*)');
 
-    // 2. Busca Múltipla Combinada (Filtro por espaço ou vírgula)
+    // Busca Múltipla Combinada (Filtro por espaço, barra ou vírgula)
     final termoBusca = termo.trim();
     if (termoBusca.isNotEmpty) {
       final termos = termoBusca
-          .split(RegExp(r'[,/\s]+')) // Aceita espaços ou vírgulas
+          .split(RegExp(r'[,/\s]+'))
           .map((t) => t.trim())
           .where((t) => t.isNotEmpty);
 
       for (final termoIndividual in termos) {
         List<String> orConditions = [];
 
-        // 2.1 Nome do cliente
+        // Nome do cliente
         orConditions.add('clientes.nome.ilike.%$termoIndividual%');
 
-        // 2.2 Valor exato (faixa inteira ignora centavos)
+        // Valor aproximado sem centavos
         final valorNumerico = int.tryParse(termoIndividual);
         if (valorNumerico != null) {
           orConditions.add(
@@ -111,7 +116,7 @@ class OrcamentoRepository {
           );
         }
 
-        // 2.3 Data (formato brasileiro dd/mm/yy ou dd/mm/yyyy)
+        // Parsing e filtro de data (Formatos PT-BR ou Ano isolado)
         try {
           final formatters = [
             DateFormat('d/M/y'),
@@ -156,7 +161,7 @@ class OrcamentoRepository {
       }
     }
 
-    // 3. Ordenação no Banco de Dados
+    // Ordenação inicial direto no banco de dados Supabase
     dynamic queryOrdenada;
     if (sortColumn == OrcamentoSortColumn.status) {
       queryOrdenada = query
@@ -176,14 +181,17 @@ class OrcamentoRepository {
         .map((map) => Orcamento.fromMap(map as Map<String, dynamic>))
         .toList();
 
-    // 4. Aplicação das Regras de Negócio Rigorosas (In-Memory Sort)
+    // Reordenação local aplicando as regras estritas de prioridade
     _aplicarOrdenacaoRigorosa(lista, sortColumn, ascending);
 
     return lista;
   }
 
-  // --- MÉTODOS AUXILIARES DE ORDENAÇÃO RIGOROSA ---
+  // ==================================================
+  // MÉTODOS AUXILIARES DE ORDENAÇÃO E PRIORIZAÇÃO
+  // ==================================================
 
+  // **[Propósito]** Ordena a lista em memória garantindo a hierarquia de status (urgente > atrasado > retorno > em prazo > entregue).
   void _aplicarOrdenacaoRigorosa(
     List<Orcamento> lista,
     OrcamentoSortColumn sortColumn,
@@ -217,16 +225,14 @@ class OrcamentoRepository {
     }
   }
 
-  /// Calcula a prioridade exata de 1 a 6 para ordenação.
+  // **[Propósito]** Retorna um número de prioridade de 1 a 6 para orçamentos pendentes/concluídos.
   int _getPrioridadeStatus(Orcamento o) {
     final map = o.toMap();
 
     // 5º: Entregue (Concluído)
     if (map['entregue'] == true) return 5;
 
-    // --- A partir daqui, APENAS orçamentos NÃO entregues ---
-
-    // 1º: Urgente, não entregue, retorno ou não
+    // 1º: Urgente, não entregue
     if (map['eh_urgente'] == true) return 1;
 
     final dataEntregaStr = map['data_entrega']?.toString();
@@ -249,19 +255,20 @@ class OrcamentoRepository {
     final isAtrasado =
         dataEntregaOnly != null && dataEntregaOnly.isBefore(hojeOnly);
 
-    // 2º: Atrasado, não entregue, retorno ou não
+    // 2º: Atrasado, não entregue
     if (isAtrasado) return 2;
 
     // 3º: Retorno, não entregue
     if (map['eh_retorno'] == true) return 3;
 
-    // 4º: Em prazo (data de entrega superior ou igual a hoje)
+    // 4º: Em prazo (data de entrega hoje ou futura)
     if (dataEntregaOnly != null) return 4;
 
-    // 6º: Sem data
+    // 6º: Sem data de entrega definida
     return 6;
   }
 
+  // **[Propósito]** Mapeia e sanitiza o valor numérico para cálculo correto na ordenação.
   double _getValorMapeado(Orcamento o) {
     final val = o.toMap()['valor'];
     if (val == null) return -1.0;
@@ -271,6 +278,7 @@ class OrcamentoRepository {
     return numVal <= 0 ? -1.0 : numVal;
   }
 
+  // **[Propósito]** Extrai a data de entrada do orçamento com fallback seguro para a data atual.
   DateTime _getDataPega(Orcamento o) {
     final str = o.toMap()['data_pega']?.toString();
     return str != null
@@ -278,7 +286,12 @@ class OrcamentoRepository {
         : DateTime.now();
   }
 
-  /// [uso]: Salva ou atualiza um orçamento no banco, injetando automaticamente o ID do usuário autenticado.
+  // ==================================================
+  // MÉTODOS DE PERSISTÊNCIA E LEITURA
+  // ==================================================
+
+  // **[Propósito]** Insere ou atualiza um orçamento vinculando automaticamente o ID do usuário autenticado.
+  // **[Parâmetros]** orcamento (Orcamento) -> Instância da entidade orçamento a ser salva.
   Future<void> salvarOrcamento(Orcamento orcamento) async {
     final dadosParaSalvar = orcamento.toMap();
 
@@ -290,7 +303,15 @@ class OrcamentoRepository {
     await _supabase.from('orcamentos').upsert(dadosParaSalvar);
   }
 
-  /// [uso]: Busca um orçamento único por seu ID, incluindo os dados do cliente.
+  // **[Propósito]** Atualiza dados pontuais de um orçamento existente.
+  // **[Parâmetros]** id (String) -> ID do orçamento; dados (Map<String, dynamic>) -> Colunas e novos valores.
+  Future<void> atualizarOrcamento(String id, Map<String, dynamic> dados) async {
+    await _supabase.from('orcamentos').update(dados).eq('id', id);
+  }
+
+  // **[Propósito]** Busca os dados completos de um único orçamento relacionando as informações do cliente.
+  // **[Parâmetros]** orcamentoId (String) -> Identificador único do orçamento.
+  // **[Retorno]** Future<Orcamento> -> Instância do orçamento preenchida.
   Future<Orcamento> buscarOrcamentoPorId(String orcamentoId) async {
     final data = await _supabase
         .from('orcamentos')
@@ -301,12 +322,14 @@ class OrcamentoRepository {
     return Orcamento.fromMap(data);
   }
 
-  /// [uso]: Exclui um orçamento do banco de dados.
+  // **[Propósito]** Exclui o registro de um orçamento do banco de dados pelo seu ID.
+  // **[Parâmetros]** orcamentoId (String) -> Identificador do orçamento a ser removido.
   Future<void> excluirOrcamento(String orcamentoId) async {
     await _supabase.from('orcamentos').delete().eq('id', orcamentoId);
   }
 
-  /// [uso]: Busca orçamentos pendentes com entrada ou entrega agendada para o dia atual.
+  // **[Propósito]** Busca orçamentos pendentes agendados para entrada ou entrega na data atual.
+  // **[Retorno]** Future<List<Map<String, dynamic>>> -> Registros brutos com dados do cliente para a lista do dia.
   Future<List<Map<String, dynamic>>> buscarOrcamentosDoDia() async {
     final hoje = DateTime.now();
 
@@ -332,7 +355,9 @@ class OrcamentoRepository {
     return List<Map<String, dynamic>>.from(response);
   }
 
-  /// Busca o histórico de orçamentos de um cliente específico.
+  // **[Propósito]** Recupera todo o histórico de orçamentos vinculados a um cliente específico.
+  // **[Parâmetros]** clienteId (String) -> Identificador do cliente.
+  // **[Retorno]** Future<List<Map<String, dynamic>>> -> Lista cronológica dos orçamentos do cliente.
   Future<List<Map<String, dynamic>>> buscarHistoricoPorCliente(
     String clienteId,
   ) async {

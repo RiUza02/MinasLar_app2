@@ -1,8 +1,6 @@
 import '../../../../Core/Design/design_system.dart';
-import '../../HomePage/lista_orcamento.dart'; // For OrcamentoSortColumn
-import 'orcamento_search_bar.dart';
+import '../../HomePage/lista_orcamento.dart';
 
-/// [uso] Cabeçalho da lista de orçamentos, contendo a barra de busca e o menu de ordenação.
 class OrcamentoListHeader extends StatelessWidget {
   final TextEditingController searchController;
   final OrcamentoSortColumn sortColumn;
@@ -27,7 +25,70 @@ class OrcamentoListHeader extends StatelessWidget {
       color: AppColors.cardBackground,
       child: Row(
         children: [
-          Expanded(child: OrcamentoSearchBar(controller: searchController)),
+          // Absorção do antigo OrcamentoSearchBar direto no Header
+          Expanded(
+            child: ValueListenableBuilder<TextEditingValue>(
+              valueListenable: searchController,
+              builder: (context, value, child) {
+                return TextField(
+                  controller: searchController,
+                  style: AppTextStyles.bodyMedium,
+                  decoration: InputDecoration(
+                    hintText: "Cliente, valor ou data...",
+                    hintStyle: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textDisabled,
+                    ),
+                    prefixIcon: const Icon(
+                      AppIcons.buscar,
+                      color: AppColors.textDisabled,
+                      size: AppDimensions.iconSizeMedium,
+                    ),
+                    suffixIcon: value.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(
+                              AppIcons.limpar,
+                              color: AppColors.textDisabled,
+                              size: AppDimensions.iconSizeMedium,
+                            ),
+                            onPressed: () => searchController.clear(),
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: AppColors.inputBackground,
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: AppDimensions.spaceMedium,
+                      horizontal: AppDimensions.spaceSmall,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusMedium,
+                      ),
+                      borderSide: const BorderSide(
+                        color: AppColors.borderLight,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusMedium,
+                      ),
+                      borderSide: const BorderSide(
+                        color: AppColors.borderLight,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusMedium,
+                      ),
+                      borderSide: const BorderSide(
+                        color: AppColors.borderFocused,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
           const SizedBox(width: AppDimensions.spaceSmall),
           _buildSortMenu(context),
         ],

@@ -1,11 +1,13 @@
 import '../Design/design_system.dart';
 
-/// Widget para exibir uma tela amigável de erro genérico com mensagem e um botão de ação.
-/// **[Onde usar]**: Em blocos de captura de exceções (`try-catch`), estados de erro de reações/cubits,
-/// ou telas que falharam ao carregar dados essenciais da API/Banco de dados.
+// **[Propósito]** Exibe uma tela de erro amigável com ícone semântico, mensagem explicativa e um botão para tentativa de recuperação.
+// **[Como usar]** AppErrorView(message: 'Falha ao carregar dados.', buttonText: 'Tentar Novamente', onTryAgain: () => buscarDados());
 class AppErrorView extends StatelessWidget {
+  // **[Parâmetros]** message (String) -> Texto descritivo da falha; buttonText (String) -> Rótulo do botão de ação.
   final String message;
   final String buttonText;
+
+  // **[Parâmetros]** onTryAgain (VoidCallback) -> Função disparada no clique de recuperação; icon (IconData) -> Ícone de alerta (padrão: AppIcons.erro).
   final VoidCallback onTryAgain;
   final IconData icon;
 
@@ -25,21 +27,21 @@ class AppErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Ícone indicativo usando a cor semântica de erro do sistema
+            // Ícone indicativo em destaque utilizando a cor semântica de erro do sistema.
             Icon(
               icon,
               size: AppDimensions.iconSizeLarge,
               color: AppColors.error,
             ),
             const SizedBox(height: AppDimensions.spaceMedium),
-            // Exibição da mensagem descritiva do erro tratada para o usuário
+            // Mensagem descritiva centralizada para orientar o usuário sobre o problema.
             Text(
               message,
               style: AppTextStyles.bodyMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppDimensions.spaceLarge),
-            // Botão de ação para disparar a tentativa de recarregamento
+            // Botão interativo que permite reexecutar a chamada ou fluxo que falhou.
             ElevatedButton(onPressed: onTryAgain, child: Text(buttonText)),
           ],
         ),

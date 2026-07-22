@@ -1,12 +1,13 @@
 import '../Design/design_system.dart';
 
-/// Cabeçalho estruturado para seções, exibindo um ícone, título e um contador opcional à direita.
-///
-/// **[Onde usar]**: No topo de listagens em geral para agrupar e quantificar dados semanticamente.
-/// Exemplos: Cabeçalhos como "Equipe (5 Usuários)", "Pendentes (2)", etc.
+// **[Propósito]** Cabeçalho estruturado para listagens, combinando ícone, título e um contador opcional para quantificar os dados.
+// **[Como usar]** AppSectionHeader(icon: Icons.people, title: 'Equipe', count: 5, countLabel: 'Usuários');
 class AppSectionHeader extends StatelessWidget {
+  // **[Parâmetros]** icon (IconData) -> Ícone de identificação visual; title (String) -> Nome da seção (ex: "Pendentes").
   final IconData icon;
   final String title;
+
+  // **[Parâmetros]** count (int?) -> Número de itens na lista; countLabel (String?) -> Rótulo do contador (ex: "itens", "orçamentos").
   final int? count;
   final String? countLabel;
 
@@ -28,17 +29,17 @@ class AppSectionHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Ícone identificador sutil da seção
+          // Ícone ilustrativo de identificação da seção com tonalidade neutra.
           Icon(
             icon,
             color: AppColors.textDisabled,
             size: AppDimensions.iconSizeSmall,
           ),
           const SizedBox(width: AppDimensions.spaceSmall),
-          // Título textual da seção baseado nos estilos do Design System
+          // Título principal consumindo a tipografia padrão de cabeçalho do Design System.
           Text(title, style: AppTextStyles.cardHeader),
           const Spacer(),
-          // Se houver contador e rótulo, exibe-os alinhados à direita da linha
+          // Renderiza o indicador quantitativo à direita apenas se o número e o rótulo forem fornecidos.
           if (count != null && countLabel != null)
             Text(
               '$count $countLabel',

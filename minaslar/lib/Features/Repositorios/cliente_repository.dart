@@ -1,13 +1,16 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
-import '../Modelos/cliente_model.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../Pages/HomePage/lista_cliente.dart';
+import '../Modelos/cliente_model.dart';
 
-/// Repositório responsável pela consulta e manipulação de dados de clientes no Supabase.
+// **[Propósito]** Repositório responsável pelas consultas, paginações, buscas dinâmicas e persistência de clientes no Supabase.
+// **[Como usar]** final clienteRepo = ClienteRepository(); / await clienteRepo.salvarCliente(novoCliente);
 class ClienteRepository {
   final _supabase = Supabase.instance.client;
 
-  /// [uso]: Busca uma lista paginada de clientes com suporte a múltiplos filtros de busca e ordenação dinâmica no banco.
+  // **[Propósito]** Realiza a busca paginada de clientes aplicável com filtros múltiplos (nome, endereço, telefone) e ordenação no banco.
+  // **[Parâmetros]** page (int) -> Número da página (base 1); pageSize (int) -> Quantidade de registros por página; termo (String) -> Filtro de pesquisa; sortColumn (ClienteSortColumn) -> Coluna de ordenação; ascending (bool) -> Direção da ordenação.
+  // **[Retorno]** Future<List<Cliente>> -> Lista de clientes retornados e serializados do Supabase.
   Future<List<Cliente>> buscarClientesPaginados({
     required int page,
     required int pageSize,
@@ -17,7 +20,7 @@ class ClienteRepository {
   }) async {
     final offset = (page - 1) * pageSize;
 
-    // 1. Mapeia a coluna de ordenação desejada
+    // Mapeamento das colunas da tabela do Supabase de acordo com a seleção da UI.
     String dbColumn;
     switch (sortColumn) {
       case ClienteSortColumn.nome:
@@ -34,7 +37,7 @@ class ClienteRepository {
         break;
     }
 
-    // 2. Monta a string de filtro multicampos (se houver termo de busca)
+    // Montagem da query de busca dinâmica multicampos para o Supabase.
     String? filtroQuery;
     if (termo.trim().isNotEmpty) {
       final termosDeBusca = termo
@@ -57,7 +60,7 @@ class ClienteRepository {
     }
 
     try {
-      // TENTATIVA PRINCIPAL: Busca clientes fazendo JOIN com a tabela de orçamentos
+      // Consulta principal associando dados de relatórios e ordens de serviços com JOIN.
       dynamic query = _supabase
           .from('clientes')
           .select('*, orcamentos!ultimo_orcamento_id(data_pega)');
@@ -70,14 +73,11 @@ class ClienteRepository {
 
       return (response as List).map((map) => Cliente.fromMap(map)).toList();
     } catch (_) {
-      // FALLBACK DEFENSIVO: Se a tabela orcamentos não existir ou a relação falhar,
-      // busca apenas na tabela clientes para que a lista continue aparecendo normalmente.
+      // Fallback defensivo: caso falhe a junção com 'orcamentos', realiza a busca simples apenas em 'clientes'.
       dynamic queryFallback = _supabase.from('clientes').select();
 
       if (filtroQuery != null) queryFallback = queryFallback.or(filtroQuery);
 
-      // Se a ordenação era por atendimento (que depende da tabela orcamentos),
-      // mudamos a ordenação para 'criado_em' ou 'nome' para evitar erro no banco.
       final colunaSegura = (sortColumn == ClienteSortColumn.ultimoAtendimento)
           ? 'criado_em'
           : dbColumn;
@@ -92,10 +92,11 @@ class ClienteRepository {
     }
   }
 
-  /// Busca um cliente único por seu ID, com fallback para consulta sem JOIN.
+  // **[Propósito]** Busca um cliente específico pelo seu ID (UUID) no Supabase, com suporte a fallback de JOIN.
+  // **[Parâmetros]** id (String) -> Identificador único do cliente no banco.
+  // **[Retorno]** Future<Map<String, dynamic>?> -> Registro bruto do cliente ou nulo caso não encontrado.
   Future<Map<String, dynamic>?> buscarClientePorId(String id) async {
     try {
-      // Tenta buscar mantendo o padrão com JOIN do último orçamento
       final response = await _supabase
           .from('clientes')
           .select('*, orcamentos!ultimo_orcamento_id(data_pega)')
@@ -103,7 +104,7 @@ class ClienteRepository {
           .maybeSingle();
       return response;
     } catch (_) {
-      // Fallback caso a relação/tabela orcamentos ainda não exista
+      // Fallback para caso a relação da tabela de orçamentos esteja indisponível.
       final response = await _supabase
           .from('clientes')
           .select()
@@ -113,12 +114,15 @@ class ClienteRepository {
     }
   }
 
-  /// Exclui um cliente do banco de dados pelo seu ID.
+  // **[Propósito]** Remove o registro de um cliente do banco de dados a partir do seu ID.
+  // **[Parâmetros]** id (String) -> Identificador único do cliente a ser removido.
   Future<void> excluirCliente(String id) async {
     await _supabase.from('clientes').delete().eq('id', id);
   }
 
-  /// Verifica no banco se já existe um cliente com nome e endereço semelhantes.
+  // **[Propósito]** Consulta se já existe um cliente cadastrado com dados similares de nome e endereço para evitar duplicidades.
+  // **[Parâmetros]** nome (String) -> Nome do cliente; rua (String) -> Logradouro; numero (String) -> Número do imóvel.
+  // **[Retorno]** Future<Cliente?> -> Retorna a instância do cliente existente se houver correspondência, ou nulo.
   Future<Cliente?> verificarDuplicado({
     required String nome,
     required String rua,
@@ -152,12 +156,14 @@ class ClienteRepository {
     }
   }
 
-  /// Insere um novo cliente no banco de dados.
+  // **[Propósito]** Insere os dados de um novo cliente no banco de dados Supabase.
+  // **[Parâmetros]** cliente (Cliente) -> Entidade preenchida com os dados cadastrais do cliente.
   Future<void> salvarCliente(Cliente cliente) async {
     await _supabase.from('clientes').insert(cliente.toMap());
   }
 
-  /// Atualiza os dados de um cliente existente no banco de dados.
+  // **[Propósito]** Atualiza campos específicos de um cliente cadastrado existente no banco.
+  // **[Parâmetros]** id (String) -> Identificador único do cliente; dadosAtualizados (Map<String, dynamic>) -> Mapa contendo as colunas e os novos valores.
   Future<void> atualizarCliente(
     String id,
     Map<String, dynamic> dadosAtualizados,

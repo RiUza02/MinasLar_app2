@@ -1,4 +1,5 @@
-/// Classe imutável da entidade Cliente.
+// **[Propósito]** Entidade imutável que representa um cliente, centralizando seus dados cadastrais, histórico e regras de serialização com o Supabase.
+// **[Como usar]** final cliente = Cliente.fromMap(jsonSupabase); / final payload = cliente.toMap();
 class Cliente {
   final String? id;
   final String nome;
@@ -12,7 +13,7 @@ class Cliente {
   final bool clienteProblematico;
   final String? observacao;
   final DateTime? criadoEm;
-  final String? ultimoOrcamento; // Data do serviço ou ID associado
+  final String? ultimoOrcamento; // Data do serviço prestado ou ID associado.
 
   const Cliente({
     this.id,
@@ -34,7 +35,9 @@ class Cliente {
   // SERIALIZAÇÃO
   // ==================================================
 
-  /// [uso]: Prepara os dados do cliente para salvar ou atualizar no Supabase/Banco de Dados.
+  // **[Propósito]** Converte o objeto [Cliente] em um Map sanitizado para inserção ou atualização na API/Banco de Dados (Supabase).
+  // **[Retorno]** Map<String, dynamic> -> Dados formatados (com remoção de máscaras e espaços em branco).
+  // **[Como usar]** await supabase.from('clientes').insert(cliente.toMap());
   Map<String, dynamic> toMap() {
     return {
       if (id != null) 'id': id,
@@ -45,19 +48,22 @@ class Cliente {
       'bairro': bairro.trim(),
       'observacao': observacao?.trim(),
       'cliente_problematico': clienteProblematico,
-      // Salva apenas os números no banco
+      // Sanitização: persiste apenas a sequência numérica no banco de dados.
       'telefone': _limparNumeros(telefone),
       if (cpf != null) 'cpf': _limparNumeros(cpf!),
       if (cnpj != null) 'cnpj': _limparNumeros(cnpj!),
-      // Envia o ID apenas se for um UUID válido
+      // Associa a chave estrangeira do orçamento apenas se for um UUID válido.
       if (ultimoOrcamento != null && _isUuid(ultimoOrcamento!))
         'ultimo_orcamento_id': ultimoOrcamento,
     };
   }
 
-  /// [uso]: Converte a resposta em JSON/Map vinda do Supabase em um objeto [Cliente] no app.
+  // **[Propósito]** Factory constructor que desserializa o Map vindo da consulta do Supabase em uma instância da classe [Cliente].
+  // **[Parâmetros]** map (Map<String, dynamic>) -> Dados brutos do banco de dados (suporta consultas com ou sem JOIN em 'orcamentos').
+  // **[Retorno]** Cliente -> Instância pronta para uso no aplicativo.
+  // **[Como usar]** final cliente = Cliente.fromMap(response.data.first);
   factory Cliente.fromMap(Map<String, dynamic> map) {
-    // Trata a busca da data vinda de tabelas relacionadas (JOIN)
+    // Trata o parsing da data do último orçamento quando vinda de tabelas relacionadas (JOIN com 'orcamentos').
     String? dataOuIdServico;
     final rawOrcamento = map['orcamentos'];
 
@@ -74,7 +80,7 @@ class Cliente {
           orcamentoMap['data']?.toString();
     }
 
-    // Fallback caso a consulta venha sem o JOIN
+    // Estrutura de fallback para consultas simples sem JOIN relacional.
     dataOuIdServico ??=
         map['ultimo_orcamento_data']?.toString() ??
         map['ultimo_orcamento_id']?.toString();
@@ -102,12 +108,12 @@ class Cliente {
   // MÉTODOS AUXILIARES
   // ==================================================
 
-  /// [uso]: Remove todos os caracteres não numéricos de uma string (máscaras, pontos e traços).
+  // **[Propósito]** Remove todos os caracteres não numéricos (pontos, traços, parênteses e espaços) de uma string.
   static String _limparNumeros(String valor) {
     return valor.replaceAll(RegExp(r'[^0-9]'), '');
   }
 
-  /// [uso]: Valida se o formato do texto corresponde a um UUID do PostgreSQL.
+  // **[Propósito]** Valida se o formato da string corresponde ao padrão UUID (v4/v1) utilizado pelo PostgreSQL.
   static bool _isUuid(String valor) {
     final uuidRegex = RegExp(
       r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
@@ -119,7 +125,8 @@ class Cliente {
   // CÓPIA E IGUALDADE
   // ==================================================
 
-  /// [uso]: Clona o objeto [Cliente] permitindo alterar apenas os campos desejados.
+  // **[Propósito]** Cria uma nova instância de [Cliente] replicando os dados atuais e alterando apenas os parâmetros informados.
+  // **[Como usar]** final clienteAtualizado = cliente.copyWith(telefone: '32988887777');
   Cliente copyWith({
     String? id,
     String? nome,
@@ -152,7 +159,7 @@ class Cliente {
     );
   }
 
-  /// [uso]: Compara se dois objetos [Cliente] possuem os mesmos dados internos.
+  // **[Propósito]** Avalia se duas instâncias de [Cliente] são estruturalmente idênticas comparando os valores de cada atributo.
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -173,7 +180,7 @@ class Cliente {
         other.ultimoOrcamento == ultimoOrcamento;
   }
 
-  /// [uso]: Gera o identificador numérico (hash) do objeto para otimizar o uso em Lists e Sets.
+  // **[Propósito]** Gera o código hash numérico do objeto baseado em seus campos para permitir comparações eficientes em coleções (Set/Map).
   @override
   int get hashCode {
     return Object.hash(

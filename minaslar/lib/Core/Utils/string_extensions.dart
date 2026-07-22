@@ -1,25 +1,21 @@
-/// Extensão com utilitários para manipulação de Strings.
+// **[Propósito]** Extensão com utilitários para manipulação e formatação de Strings no padrão visual da aplicação.
+// **[Como usar]** String nomeFormatado = "  joão  da SILVA  ".toTitleCase(); // Retorna: "João Da Silva"
 extension StringCasingExtension on String {
-  /// [uso] Converte um texto para o formato "Title Case".
-  /// "  joão  da SILVA  " -> "João da Silva"
+  // **[Propósito]** Normaliza espaçamentos e converte uma string para o formato "Title Case" (primeira letra de cada palavra em maiúscula).
+  // **[Retorno]** String -> Texto limpo e formatado.
   String toTitleCase() {
-    // Retorna uma string vazia caso o texto contenha apenas espaços.
     if (trim().isEmpty) return "";
 
     return trim()
-        // Divide a frase em palavras, ignorando múltiplos espaços.
+        // Divide o texto com base em qualquer quantidade de espaços em branco contínuos.
         .split(RegExp(r'\s+'))
         .map((word) {
-          // Ignora palavras vazias.
           if (word.isEmpty) return "";
-
-          // Trata palavras com apenas um caractere.
           if (word.length == 1) return word.toUpperCase();
 
-          // Primeira letra maiúscula e restante minúsculo.
+          // Garante a inicial maiúscula e converte o restante da palavra para minúsculo.
           return "${word[0].toUpperCase()}${word.substring(1).toLowerCase()}";
         })
-        // Junta as palavras com um único espaço.
         .join(' ');
   }
 }

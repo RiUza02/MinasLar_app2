@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'cliente_model.dart';
 
-/// Enum para representar os turnos de agendamento,
-/// evitando o uso de "magic strings".
+// **[Propósito]** Enumeração dos turnos operacionais de agendamento, evitando strings mágicas e garantindo integridade de dados.
 enum Turno {
   manha('Manhã'),
   tarde('Tarde');
@@ -10,58 +9,32 @@ enum Turno {
   const Turno(this.valor);
   final String valor;
 
-  /// Converte a string do banco de dados para o Enum otimizado de forma segura.
-  /// Modificado para adotar [Turno.tarde] como padrão caso seja nulo ou inválido.
+  // **[Propósito]** Converte a string registrada no banco de dados para o Enum correspondente, adotando 'Tarde' como fallback padrão.
+  // **[Parâmetros]** valorBanco (String?) -> Valor textual armazenado no banco.
+  // **[Retorno]** Turno -> Instância tratada do Enum.
   static Turno fromString(String? valorBanco) {
     if (valorBanco == 'Manhã') return Turno.manha;
-    return Turno.tarde; // Padrão agora é Tarde
+    return Turno.tarde;
   }
 }
 
-/// Modelo que representa um orçamento no sistema.
-/// Otimizado para alto volume de inserção e atualizações pontuais (upsert).
+// **[Propósito]** Entidade imutável que representa um orçamento de serviço no sistema, otimizada para inserções e operações relacionais.
+// **[Como usar]** final orcamento = Orcamento.fromMap(jsonSupabase); / final payload = orcamento.toMap();
 class Orcamento {
-  /// ID do registro no Supabase (UUID). Nulo antes da primeira inserção no banco.
   final String? id;
-
-  /// ID do cliente relacionado ao orçamento (chave estrangeira indexada).
   final String clienteId;
-
-  /// Objeto do cliente associado (preenchido automaticamente nas consultas com JOIN do Supabase).
   final Cliente? cliente;
-
-  /// Título do serviço (Ex: "Formatação PC", "Troca de Tela").
   final String titulo;
-
-  /// Descrição detalhada do serviço realizado.
   final String? descricao;
-
-  /// Data em que o serviço foi iniciado ou agendado.
   final DateTime dataPega;
-
-  /// Data prevista ou efetiva de entrega do serviço.
   final DateTime? dataEntrega;
-
-  /// Valor financeiro do orçamento.
   final double? valor;
-
-  /// Turno do agendamento ('Manhã' ou 'Tarde'). Padrão: [Turno.tarde].
   final Turno horarioDoDia;
-
-  /// Indica se o serviço foi concluído/entregue.
   final bool entregue;
-
-  /// Indica se o serviço é um retorno de garantia/revisão.
   final bool ehRetorno;
-
-  /// Indica se é urgente, para priorização visual e na query SQL.
   final bool ehUrgente;
-
-  /// Carimbo de tempo para auditoria e controle de última modificação.
   final DateTime? atualizadoEm;
 
-  /// Construtor imutável com const para performance de memória no Flutter.
-  /// [horarioDoDia] deixou de ser required e agora assume [Turno.tarde] por padrão.
   const Orcamento({
     required this.clienteId,
     required this.titulo,
@@ -81,8 +54,10 @@ class Orcamento {
   // ==================================================
   // MÉTODOS DE SERIALIZAÇÃO E OTIMIZAÇÃO (SUPABASE)
   // ==================================================
-  /// Converte o objeto Dart em um [Map] compatível com o Supabase.
-  /// Nota: O campo [cliente] não é enviado ao banco pois representa uma relação de leitura.
+
+  // **[Propósito]** Converte o objeto [Orcamento] em um Map serializável para persistência no Supabase (ignora o objeto relacional `cliente`).
+  // **[Retorno]** Map<String, dynamic> -> Estrutura de dados pronta para inserção/atualização SQL.
+  // **[Como usar]** await supabase.from('orcamentos').upsert(orcamento.toMap());
   Map<String, dynamic> toMap() {
     return {
       if (id != null) 'id': id,
@@ -100,9 +75,12 @@ class Orcamento {
     };
   }
 
-  /// Cria um objeto [Orcamento] a partir de um [Map] (JSON) do Supabase.
+  // **[Propósito]** Factory constructor que desserializa os dados do Supabase, incluindo mapeamento relacional do cliente via JOIN.
+  // **[Parâmetros]** map (Map<String, dynamic>) -> Dados de orçamento retornados pelo banco de dados.
+  // **[Retorno]** Orcamento -> Instância tratada contra erros de parsing e valores nulos.
+  // **[Como usar]** final orcamento = Orcamento.fromMap(response.data.first);
   factory Orcamento.fromMap(Map<String, dynamic> map) {
-    // Captura os dados relacionais do cliente vindos do JOIN (tabela 'clientes' ou alias 'cliente')
+    // Mapeamento dos dados do cliente vindos de joins relacionais da tabela 'clientes'.
     final clienteData = map['clientes'] ?? map['cliente'];
 
     return Orcamento(
@@ -113,16 +91,12 @@ class Orcamento {
           : null,
       titulo: map['titulo'] ?? 'Sem Título',
       descricao: map['descricao'],
-
-      // Proteção contra falhas de conversão em registros antigos
       dataPega: map['data_pega'] != null
           ? DateTime.tryParse(map['data_pega'].toString()) ?? DateTime.now()
           : DateTime.now(),
-
       dataEntrega: map['data_entrega'] != null
           ? DateTime.tryParse(map['data_entrega'].toString())
           : null,
-
       valor: map['valor'] != null ? (map['valor'] as num).toDouble() : null,
       horarioDoDia: Turno.fromString(map['horario_do_dia']),
       entregue: map['entregue'] ?? false,
@@ -137,8 +111,9 @@ class Orcamento {
   // ==================================================
   // MÉTODOS DE GERÊNCIA DE ESTADO E COMPARAÇÃO
   // ==================================================
-  /// Cria uma cópia do orçamento alterando apenas os campos fornecidos.
-  /// Fundamental para gerência de estado sem mutabilidade direta.
+
+  // **[Propósito]** Cria uma nova instância de [Orcamento] mantendo a imutabilidade e alterando apenas os atributos passados.
+  // **[Como usar]** final orcamentoEntregue = orcamento.copyWith(entregue: true);
   Orcamento copyWith({
     String? id,
     String? clienteId,
@@ -171,19 +146,18 @@ class Orcamento {
     );
   }
 
-  /// [uso] Verifica se o orçamento está atrasado.
-  /// Um orçamento é considerado atrasado se não foi entregue e a data de entrega
-  /// já passou.
+  // **[Propósito]** Indica se a entrega do serviço está em atraso em relação à data atual (desconsiderando horas).
+  // **[Retorno]** bool -> Retorna `true` se não entregue e a data de entrega for anterior ao dia atual.
   bool get isAtrasado {
     if (entregue || dataEntrega == null) {
       return false;
     }
-    // Compara apenas a data, ignorando a hora.
     final hoje = DateUtils.dateOnly(DateTime.now());
     final dataEntregaDateOnly = DateUtils.dateOnly(dataEntrega!);
     return dataEntregaDateOnly.isBefore(hoje);
   }
 
+  // **[Propósito]** Compara se dois orçamentos são equivalentes avaliando o valor interno de todas as suas propriedades.
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -204,6 +178,7 @@ class Orcamento {
         other.atualizadoEm == atualizadoEm;
   }
 
+  // **[Propósito]** Calcula o hash numérico do objeto agrupando seus campos para busca em alta performance.
   @override
   int get hashCode {
     return Object.hash(

@@ -1,17 +1,13 @@
 import '../Design/design_system.dart';
 
-/// Container card com cabeçalho (ícone + título), bordas e espaçamentos padronizados.
-///
-/// **[Onde usar]**: Ideal para agrupar blocos de informações correlacionadas.
-/// Exemplos: Card de "Dados Pessoais", Card de "Segurança" ou seções de formulários.
+// **[Propósito]** Container padronizado com cabeçalho (ícone + título) e bordas, ideal para agrupar blocos de informações correlacionadas em formulários e dashboards.
+// **[Como usar]** AppCardContainer(titulo: 'DADOS PESSOAIS', icone: Icons.person, children: [TextField(...), ...]);
 class AppCardContainer extends StatelessWidget {
-  /// Título em destaque no topo da seção do card (ex: "DADOS PESSOAIS").
+  // **[Parâmetros]** titulo (String) -> Texto do cabeçalho; icone (IconData) -> Ícone de identificação visual do bloco.
   final String titulo;
-
-  /// Ícone que acompanha o título para rápida identificação visual da seção.
   final IconData icone;
 
-  /// Lista de widgets (geralmente campos de texto ou botões) que ficarão dentro do card.
+  // **[Parâmetros]** children (List<Widget>) -> Elementos do corpo do card; action (Widget?) -> Ação opcional posicionada no topo direito (ex: botão de editar).
   final List<Widget> children;
   final Widget? action;
 
@@ -27,7 +23,7 @@ class AppCardContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppDimensions.spaceLarge),
-      // Estrutura visual baseada nos tokens do Design System
+      // Estrutura visual padronizada consumindo os tokens globais do Design System.
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
@@ -36,7 +32,7 @@ class AppCardContainer extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Cabeçalho padronizado (Ícone + Título)
+          // Cabeçalho superior do card com alinhamento flexível para acomodar o widget de ação opcional.
           Row(
             children: [
               Icon(
@@ -51,7 +47,7 @@ class AppCardContainer extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppDimensions.spaceLarge),
-          // Injeção da lista de elementos internos do card
+          // Expande os elementos filhos diretamente na coluna do container.
           ...children,
         ],
       ),

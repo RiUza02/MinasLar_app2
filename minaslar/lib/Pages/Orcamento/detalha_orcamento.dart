@@ -1,26 +1,20 @@
 import 'package:intl/intl.dart';
-
 import '../../Core/Design/design_system.dart';
+import '../../Core/Errors/errors.dart';
+import '../../Core/Utils/formatters.dart';
 import '../../Core/Widgets/widgets.dart';
-import '../../Features/Modelos/cliente_model.dart';
 import '../../Features/Modelos/orcamento_model.dart';
 import '../../Features/Repositorios/orcamento_repository.dart';
-import '../Cliente/detalha_cliente.dart';
-import '../Utils/ListaOrcamento/detalhes_orcamento_controller.dart';
-import '../Utils/ListaOrcamento/widgets.dart';
 import 'edita_orcamento.dart';
 
-// ==================================================
-// TELA DE DETALHES DO ORÇAMENTO (UNIFICADA)
-// ==================================================
 class DetalhesOrcamento extends StatefulWidget {
-  final Map<String, dynamic> orcamentoInicial;
+  final dynamic orcamentoInicial;
   final bool isAdmin;
 
   const DetalhesOrcamento({
     super.key,
     required this.orcamentoInicial,
-    required this.isAdmin, // Define se é visão de Admin ou Usuário
+    this.isAdmin = false,
   });
 
   @override
@@ -28,341 +22,512 @@ class DetalhesOrcamento extends StatefulWidget {
 }
 
 class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
-  // ==================================================
-  // ESTADO E VARIÁVEIS
-  // ==================================================
-  late final DetalhesOrcamentoController _controller;
+  final _repository = OrcamentoRepository();
+  late Orcamento _orcamento;
+  bool _isLoading = false;
+  String? _error;
 
-  // Cores dinâmicas
-  late Color corPrincipal;
-  late Color corSecundaria;
   @override
   void initState() {
     super.initState();
-    // Configura cores baseadas no tipo de usuário
-    if (widget.isAdmin) {
-      corPrincipal = AppColors.primaryAlternative;
-      corSecundaria = AppColors.primary;
+    // Suporta tanto o objeto Orcamento quanto o Map<String, dynamic> vindo do Supabase (ex: AgendaPage)
+    if (widget.orcamentoInicial is Orcamento) {
+      _orcamento = widget.orcamentoInicial as Orcamento;
+    } else if (widget.orcamentoInicial is Map) {
+      _orcamento = Orcamento.fromMap(
+        Map<String, dynamic>.from(widget.orcamentoInicial as Map),
+      );
     } else {
-      corPrincipal = AppColors.primary;
-      corSecundaria = AppColors.borderFocused;
+      throw ArgumentError(
+        'O argumento orcamentoInicial deve ser um Orcamento ou um Map<String, dynamic>.',
+      );
     }
-
-    _controller = DetalhesOrcamentoController(
-      repository: OrcamentoRepository(),
-      orcamentoInicial: Orcamento.fromMap(widget.orcamentoInicial),
-    );
-
-    _controller.carregarDetalhes();
+    _carregarDetalhes();
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  Future<void> _carregarDetalhes() async {
+    if (_orcamento.id == null) {
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
-  // ==================================================
-  // LÓGICA DE DADOS
-  // ==================================================
+    try {
+      final atualizado = await _repository.buscarOrcamentoPorId(_orcamento.id!);
+      if (mounted) {
+        setState(() => _orcamento = atualizado);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = ErrorHandler.mapearErro(e));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   Future<void> _alterarStatusEntrega() async {
-    final resultado = await _controller.alterarStatusEntrega();
-
-    if (!mounted) return;
-
-    if (resultado == null) {
-      AppFeedback.show(
-        context,
-        'Status alterado com sucesso!',
-        type: FeedbackType.success,
+    setState(() => _isLoading = true);
+    try {
+      final orcamentoAtualizado = _orcamento.copyWith(
+        entregue: !_orcamento.entregue,
       );
-    } else {
-      AppFeedback.show(
-        context,
-        'Erro ao alterar status: $resultado',
-        type: FeedbackType.error,
-      );
+      await _repository.salvarOrcamento(orcamentoAtualizado);
+
+      setState(() => _orcamento = orcamentoAtualizado);
+      if (mounted) {
+        AppFeedback.show(
+          context,
+          orcamentoAtualizado.entregue
+              ? 'Serviço marcado como concluído!'
+              : 'Serviço reaberto com sucesso!',
+          type: FeedbackType.success,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        AppFeedback.show(
+          context,
+          ErrorHandler.mapearErro(e),
+          type: FeedbackType.error,
+        );
+      }
+    } finally {
+      await _carregarDetalhes();
     }
   }
 
   Future<void> _excluirOrcamento() async {
     final confirmar = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.cardBackground,
-        title: Text("Excluir Orçamento", style: AppTextStyles.titleMedium),
-        content: Text(
-          "Tem certeza? Esta ação não pode ser desfeita.",
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
-          ),
+        title: const Text(
+          "Excluir Orçamento?",
+          style: AppTextStyles.titleMedium,
+        ),
+        content: const Text(
+          "Esta ação não poderá ser desfeita.",
+          style: AppTextStyles.bodyMedium,
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("CANCELAR"),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text(
+              "CANCELAR",
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text("EXCLUIR", style: TextStyle(color: AppColors.error)),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("EXCLUIR", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
 
-    if (confirmar == true) {
-      final resultado = await _controller.excluirOrcamento();
+    if (confirmar != true || _orcamento.id == null) {
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await _repository.excluirOrcamento(_orcamento.id!);
       if (mounted) {
-        if (resultado == null) {
-          AppFeedback.show(
-            context,
-            'Orçamento excluído!',
-            type: FeedbackType.success,
-          );
-          Navigator.pop(context, true);
-        } else {
-          AppFeedback.show(
-            context,
-            'Erro ao excluir: $resultado',
-            type: FeedbackType.error,
-          );
-        }
+        AppFeedback.show(
+          context,
+          'Orçamento removido.',
+          type: FeedbackType.success,
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        AppFeedback.show(
+          context,
+          ErrorHandler.mapearErro(e),
+          type: FeedbackType.error,
+        );
+        setState(() => _isLoading = false);
       }
     }
   }
 
-  void _navegarEditar() async {
-    final resultado = await Navigator.push(
+  Future<void> _editarOrcamento() async {
+    final editado = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            EditarOrcamento(orcamento: _controller.orcamento.toMap()),
+        builder: (_) => EditarOrcamento(orcamento: _orcamento.toMap()),
       ),
     );
-
-    if (resultado == true) {
-      _controller.carregarDetalhes();
+    if (editado == true && mounted) {
+      _carregarDetalhes();
     }
   }
 
-  void _navegarDetalhesCliente() {
-    final Cliente? cliente = _controller.orcamento.cliente;
-
-    if (cliente != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>
-              DetalhesClientePage(cliente: cliente, isAdmin: widget.isAdmin),
-        ),
-      ).then((_) => _controller.carregarDetalhes());
-    } else {
-      AppFeedback.show(
-        context,
-        "Dados do cliente incompletos.",
-        type: FeedbackType.info,
+  ({String label, Color color, IconData icon}) _obterStatusPrincipal() {
+    if (_orcamento.entregue) {
+      return (
+        label: "CONCLUÍDO",
+        color: AppColors.primary,
+        icon: AppIcons.valido,
       );
     }
-  }
-
-  // ==================================================
-  // INTERFACE (BUILD)
-  // ==================================================
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        final orcamento = _controller.orcamento;
-        final bool isConcluido = orcamento.entregue;
-        final String horario = orcamento.horarioDoDia.valor;
-        final bool isTarde = horario.toLowerCase() == 'tarde';
-        final bool isAtrasado = orcamento.isAtrasado;
-
-        final IconData iconHorario = isTarde
-            ? AppIcons.tarde
-            : AppIcons.manha; // Lógica de UI
-        final Color corHorario = isTarde
-            ? AppColors.afternoonShift
-            : AppColors.morningShift;
-
-        final String textoValor = orcamento.valor != null
-            ? NumberFormat.currency(
-                locale: 'pt_BR',
-                symbol: 'R\$',
-              ).format(orcamento.valor)
-            : 'A Combinar';
-
-        final Color corValor = orcamento.valor != null
-            ? AppColors.adminColor
-            : AppColors.textDisabled;
-
-        Color corBordaPrincipal;
-        if (isConcluido) {
-          corBordaPrincipal = AppColors.primary; // Lógica de UI
-        } else if (orcamento.ehUrgente) {
-          corBordaPrincipal = AppColors.error;
-        } else if (orcamento.ehRetorno) {
-          corBordaPrincipal = AppColors.success;
-        } else if (isAtrasado) {
-          corBordaPrincipal = AppColors.warning;
-        } else {
-          corBordaPrincipal = corSecundaria;
-        }
-
-        return Scaffold(
-          backgroundColor: AppColors.background,
-          appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(40.0),
-            child: AppBar(
-              title: Text(
-                widget.isAdmin
-                    ? "Detalhes do Orçamento"
-                    : "Detalhes do Serviço",
-              ),
-              backgroundColor: corPrincipal,
-              centerTitle: true,
-              actions: widget.isAdmin
-                  ? [
-                      IconButton(
-                        icon: const Icon(AppIcons.editar),
-                        onPressed: _navegarEditar,
-                        tooltip: 'Editar Orçamento',
-                      ),
-                      IconButton(
-                        icon: const Icon(AppIcons.excluir),
-                        onPressed: _excluirOrcamento,
-                        tooltip: 'Excluir Orçamento',
-                      ),
-                    ]
-                  : [],
-            ),
-          ),
-          floatingActionButton: widget.isAdmin
-              ? FloatingActionButton(
-                  backgroundColor: corPrincipal,
-                  foregroundColor: AppColors.textPrimary,
-                  onPressed: _navegarEditar,
-                  tooltip: 'Editar Orçamento',
-                  child: const Icon(AppIcons.editar),
-                )
-              : null,
-          body: _buildBody(
-            _controller,
-            corBordaPrincipal,
-            textoValor,
-            corValor,
-            horario,
-            iconHorario,
-            corHorario,
-          ),
-        );
-      },
+    if (_orcamento.isAtrasado) {
+      return (
+        label: "ATRASADO",
+        color: AppColors.warning,
+        icon: AppIcons.pendente,
+      );
+    }
+    if (_orcamento.ehUrgente) {
+      return (label: "URGENTE", color: AppColors.error, icon: AppIcons.urgente);
+    }
+    if (_orcamento.ehRetorno) {
+      return (
+        label: "GARANTIA",
+        color: AppColors.adminColor,
+        icon: AppIcons.retorno,
+      );
+    }
+    return (
+      label: "PENDENTE",
+      color: AppColors.morningShift,
+      icon: AppIcons.pendente,
     );
   }
 
-  /// Constrói o corpo da tela, gerenciando os estados de carregamento e erro.
-  Widget _buildBody(
-    DetalhesOrcamentoController controller,
-    Color corBordaPrincipal,
-    String textoValor,
-    Color corValor,
-    String horario,
-    IconData iconHorario,
-    Color corHorario,
-  ) {
-    if (controller.isLoading && controller.error == null) {
-      return Center(child: CircularProgressIndicator(color: corPrincipal));
-    }
+  @override
+  Widget build(BuildContext context) {
+    final status = _obterStatusPrincipal();
+    final dataEntradaF = DateFormat('dd/MM/yyyy').format(_orcamento.dataPega);
+    final dataEntregaF = _orcamento.dataEntrega != null
+        ? DateFormat('dd/MM/yyyy').format(_orcamento.dataEntrega!)
+        : 'A Definir';
+    final valorF = _orcamento.valor != null
+        ? NumberFormat.currency(
+            locale: 'pt_BR',
+            symbol: 'R\$ ',
+          ).format(_orcamento.valor)
+        : 'A Combinar';
 
-    if (controller.error != null) {
-      return AppErrorView(
-        message: controller.error!,
-        buttonText: "Tentar Novamente",
-        onTryAgain: controller.carregarDetalhes,
-      );
-    }
-
-    final orcamento = controller.orcamento;
-
-    return RefreshIndicator(
-      color: corPrincipal,
-      backgroundColor: AppColors.cardBackground,
-      onRefresh: controller.carregarDetalhes,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppDimensions.spaceLarge),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            PrincipalInfoCard(
-              orcamento: orcamento,
-              borderColor: corBordaPrincipal,
-              secondaryColor: corSecundaria,
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(40.0),
+        child: AppBar(
+          title: const Text("Detalhes do Orçamento"),
+          backgroundColor: widget.isAdmin
+              ? AppColors.primaryAlternative
+              : AppColors.primary,
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(AppIcons.editar, color: AppColors.textPrimary),
+              onPressed: _isLoading ? null : _editarOrcamento,
+              tooltip: "Editar",
             ),
-            const SizedBox(height: AppDimensions.spaceMedium),
-            if (widget.isAdmin) ...[
-              ValorCard(textoValor: textoValor, corValor: corValor),
-              const SizedBox(height: AppDimensions.spaceLarge),
-            ],
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: ClienteButton(
-                    nomeCliente:
-                        orcamento.cliente?.nome ?? 'Cliente desconhecido',
-                    themeColor: corPrincipal,
-                    onTap: _navegarDetalhesCliente,
-                  ),
-                ),
-                const SizedBox(width: AppDimensions.spaceMedium),
-                Expanded(
-                  flex: 2,
-                  child: InfoTile(
-                    label: "TURNO",
-                    value: horario.toUpperCase(),
-                    icon: iconHorario,
-                    color: corHorario,
-                  ),
-                ),
-              ],
+            IconButton(
+              // Corrigido para AppIcons.excluir (resolve o erro const_with_non_constant_argument e undefined_getter)
+              icon: const Icon(AppIcons.excluir, color: AppColors.textPrimary),
+              onPressed: _isLoading ? null : _excluirOrcamento,
+              tooltip: "Excluir",
             ),
-            const SizedBox(height: AppDimensions.spaceMedium),
-            if (widget.isAdmin) ...[
-              StatusActionCard(
-                orcamento: orcamento,
-                onStatusChange: _alterarStatusEntrega,
-              ),
-              const SizedBox(height: AppDimensions.spaceLarge),
-            ],
-            Row(
-              children: [
-                Expanded(
-                  child: DataCard(
-                    label: "Entrada",
-                    data: orcamento.dataPega,
-                    icon: AppIcons.calendario,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(width: AppDimensions.spaceMedium),
-                Expanded(
-                  child: DataCard(
-                    label: "Entrega",
-                    data: orcamento.dataEntrega,
-                    icon: AppIcons.evento,
-                    color: orcamento.isAtrasado
-                        ? AppColors.error
-                        : AppColors.success,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.spaceXXXLarge),
           ],
         ),
+      ),
+      body: _isLoading && _orcamento.id == null
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primaryAlternative,
+              ),
+            )
+          : _error != null
+          ? AppErrorView(
+              message: _error!,
+              buttonText: 'Tentar Novamente',
+              onTryAgain: _carregarDetalhes,
+            )
+          : RefreshIndicator(
+              onRefresh: _carregarDetalhes,
+              color: AppColors.primaryAlternative,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(AppDimensions.spaceLarge),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppDimensions.spaceMedium,
+                              horizontal: AppDimensions.spaceLarge,
+                            ),
+                            decoration: BoxDecoration(
+                              color: status.color.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusLarge,
+                              ),
+                              border: Border.all(color: status.color),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  status.icon,
+                                  color: status.color,
+                                  size: AppDimensions.iconSizeMedium,
+                                ),
+                                const SizedBox(width: AppDimensions.spaceSmall),
+                                Text(
+                                  status.label,
+                                  style: AppTextStyles.bodyLargeBold.copyWith(
+                                    color: status.color,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppDimensions.spaceMedium),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.cardBackground,
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusLarge,
+                            ),
+                            border: Border.all(color: AppColors.borderLight),
+                          ),
+                          child: IconButton(
+                            icon: const Icon(
+                              AppIcons.atualizar,
+                              color: AppColors.textSecondary,
+                            ),
+                            tooltip: "Alterar Status (Concluir/Reabrir)",
+                            onPressed: _isLoading
+                                ? null
+                                : _alterarStatusEntrega,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppDimensions.spaceLarge),
+
+                    Container(
+                      padding: const EdgeInsets.all(AppDimensions.spaceXLarge),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardBackground,
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusLarge,
+                        ),
+                        border: Border(
+                          left: BorderSide(color: status.color, width: 6),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _orcamento.titulo,
+                            style: AppTextStyles.titleLarge.copyWith(
+                              decoration: _orcamento.entregue
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                              decorationColor: AppColors.textDisabled,
+                            ),
+                          ),
+                          const SizedBox(height: AppDimensions.spaceLarge),
+                          const Divider(color: AppColors.borderLight),
+                          const SizedBox(height: AppDimensions.spaceLarge),
+                          Row(
+                            children: [
+                              Icon(
+                                _orcamento.ehRetorno
+                                    ? AppIcons.retorno
+                                    : AppIcons.descricao,
+                                color: _orcamento.ehRetorno
+                                    ? AppColors.adminColor
+                                    : AppColors.primaryAlternative,
+                                size: AppDimensions.iconSizeSmall,
+                              ),
+                              const SizedBox(width: AppDimensions.spaceSmall),
+                              Text(
+                                _orcamento.ehRetorno
+                                    ? "GARANTIA / RETORNO"
+                                    : "DESCRIÇÃO DO SERVIÇO",
+                                style: AppTextStyles.cardHeader.copyWith(
+                                  color: _orcamento.ehRetorno
+                                      ? AppColors.adminColor
+                                      : AppColors.primaryAlternative,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppDimensions.spaceSmall),
+                          Text(
+                            (_orcamento.descricao?.isNotEmpty ?? false)
+                                ? _orcamento.descricao!
+                                : "Sem descrição detalhada informada.",
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppDimensions.spaceLarge),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTile(
+                            "ENTRADA",
+                            dataEntradaF,
+                            AppIcons.calendario,
+                            AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(width: AppDimensions.spaceMedium),
+                        Expanded(
+                          child: _buildTile(
+                            "ENTREGA",
+                            dataEntregaF,
+                            AppIcons.evento,
+                            _orcamento.isAtrasado
+                                ? AppColors.warning
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(width: AppDimensions.spaceMedium),
+                        Expanded(
+                          child: _buildTile(
+                            "TURNO",
+                            _orcamento.horarioDoDia.valor.toUpperCase(),
+                            _orcamento.horarioDoDia == Turno.manha
+                                ? AppIcons.manha
+                                : AppIcons.tarde,
+                            _orcamento.horarioDoDia == Turno.manha
+                                ? AppColors.morningShift
+                                : AppColors.afternoonShift,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppDimensions.spaceLarge),
+
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppDimensions.spaceLarge,
+                        horizontal: AppDimensions.spaceXLarge,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardBackground,
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusLarge,
+                        ),
+                        border: Border.all(color: AppColors.borderLight),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("VALOR TOTAL", style: AppTextStyles.cardHeader),
+                          Text(
+                            valorF,
+                            style: AppTextStyles.titleLarge.copyWith(
+                              color: _orcamento.valor != null
+                                  ? AppColors.success
+                                  : AppColors.textDisabled,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppDimensions.spaceLarge),
+
+                    if (_orcamento.cliente != null) ...[
+                      AppCardContainer(
+                        titulo: 'CLIENTE VINCULADO',
+                        icone: AppIcons.clientes,
+                        children: [
+                          Row(
+                            children: [
+                              const CircleAvatar(
+                                backgroundColor: AppColors.inputBackground,
+                                child: Icon(
+                                  AppIcons.cliente,
+                                  color: AppColors.primaryAlternative,
+                                ),
+                              ),
+                              const SizedBox(width: AppDimensions.spaceMedium),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _orcamento.cliente!.nome,
+                                      style: AppTextStyles.bodyLargeBold,
+                                    ),
+                                    Text(
+                                      AppFormatters.telefone.maskText(
+                                        _orcamento.cliente!.telefone,
+                                      ),
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildTile(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(AppDimensions.spaceMedium),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: color, size: AppDimensions.iconSizeMedium),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: AppTextStyles.caption.copyWith(
+              fontSize: 10,
+              color: AppColors.textDisabled,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: AppTextStyles.bodySmall.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }

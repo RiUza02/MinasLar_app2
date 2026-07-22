@@ -1,23 +1,15 @@
 import '../Design/design_system.dart';
 
-/// Definição dos tipos de feedback visual disponíveis no sistema.
-///
-/// [Uso] Indica a semântica do alerta que será exibido para o usuário,
-/// alterando a cor de fundo do componente para corresponder ao estado (sucesso, erro ou informativo).
+// **[Propósito]** Define a semântica visual dos alertas flutuantes (sucesso, erro ou informação neutra).
 enum FeedbackType { success, error, info }
 
-/// Serviço centralizado para exibição de alertas flutuantes (SnackBars) padronizados.
-///
-/// [Uso] Utilizado em qualquer ponto da camada de apresentação para exibir avisos rápidos
-/// e temporários ao usuário (como confirmações de salvamento, mensagens de erro de API ou alertas informativos),
-/// garantindo consistência com as cores do Design System.
+// **[Propósito]** Serviço centralizado para exibição de alertas flutuantes (SnackBars) temporários e padronizados com o Design System.
+// **[Como usar]** AppFeedback.show(context, 'Dados salvos com sucesso!', type: FeedbackType.success);
 class AppFeedback {
   AppFeedback._();
 
-  /// Renderiza e exibe um [SnackBar] customizado na tela.
-  ///
-  /// [Uso] Chame este método estático passando o [context] atual da árvore de widgets,
-  /// a [message] que deseja exibir e o [type] para definir a estilização visual do alerta.
+  // **[Propósito]** Mapeia a cor do alerta com base no tipo semântico e renderiza o SnackBar na tela atual.
+  // **[Parâmetros]** context (BuildContext) -> Contexto da UI; message (String) -> Texto do aviso; type (FeedbackType) -> Define a cor de fundo (padrão: info).
   static void show(
     BuildContext context,
     String message, {

@@ -1,34 +1,20 @@
-/// Modelo que representa um técnico ou usuário administrativo da loja.
-/// Projetado para altíssima taxa de leitura.
+// **[Propósito]** Entidade imutável que representa um técnico ou usuário administrativo da loja, com foco em segurança e alta taxa de leitura.
+// **[Como usar]** final usuario = Usuario.fromMap(jsonSupabase); / final payload = usuario.toMap();
 class Usuario {
-  /// Identificador único (UUID) vinculado ao Supabase.
   final String? id;
-
-  /// Nome completo do técnico ou funcionário.
   final String nome;
-
-  /// Telefone de contato (armazenado apenas números no banco).
   final String telefone;
-
-  /// Define se o usuário possui permissões administrativas na loja.
   final bool isAdmin;
-
-  /// Define se o usuário está liberado para acessar e utilizar o sistema.
   final bool autenticado;
-
-  /// Data de cadastro no sistema.
   final DateTime? criadoEm;
-
-  /// Data da última modificação cadastral.
   final DateTime? atualizadoEm;
 
-  /// Construtor principal imutável.
   const Usuario({
     this.id,
     required this.nome,
     required this.telefone,
     this.isAdmin = false,
-    this.autenticado = false, // Padrão bloqueado até que se aprove
+    this.autenticado = false,
     this.criadoEm,
     this.atualizadoEm,
   });
@@ -37,6 +23,9 @@ class Usuario {
   // MÉTODOS DE SERIALIZAÇÃO (SUPABASE)
   // ==================================================
 
+  // **[Propósito]** Converte a instância de [Usuario] em um Map serializável para persistência no banco de dados.
+  // **[Retorno]** Map<String, dynamic> -> Estrutura de dados tratada (com sanitização do telefone).
+  // **[Como usar]** await supabase.from('usuarios').upsert(usuario.toMap());
   Map<String, dynamic> toMap() {
     return {
       if (id != null) 'id': id,
@@ -48,6 +37,10 @@ class Usuario {
     };
   }
 
+  // **[Propósito]** Factory constructor que desserializa os dados do Supabase em uma instância do tipo [Usuario].
+  // **[Parâmetros]** map (Map<String, dynamic>) -> Dados de entrada retornados da consulta SQL.
+  // **[Retorno]** Usuario -> Instância configurada com tratamentos para valores nulos.
+  // **[Como usar]** final usuario = Usuario.fromMap(response.data.first);
   factory Usuario.fromMap(Map<String, dynamic> map) {
     return Usuario(
       id: map['id']?.toString(),
@@ -68,6 +61,8 @@ class Usuario {
   // MÉTODOS DE CÓPIA E COMPARAÇÃO
   // ==================================================
 
+  // **[Propósito]** Cria uma nova instância de [Usuario] preservando a imutabilidade e alterando apenas os atributos especificados.
+  // **[Como usar]** final usuarioAprovado = usuario.copyWith(autenticado: true);
   Usuario copyWith({
     String? id,
     String? nome,
@@ -88,7 +83,7 @@ class Usuario {
     );
   }
 
-  /// Sobrescreve o operador de igualdade (`==`).
+  // **[Propósito]** Compara se dois usuários possuem o mesmo conteúdo comparando todos os atributos individualmente.
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -103,7 +98,7 @@ class Usuario {
         other.atualizadoEm == atualizadoEm;
   }
 
-  /// Sobrescreve o gerador de Hash do objeto.
+  // **[Propósito]** Gera o código hash numérico do objeto baseado em suas propriedades para otimização em listas e mapas.
   @override
   int get hashCode {
     return Object.hash(
@@ -117,7 +112,7 @@ class Usuario {
     );
   }
 
-  /// Retorna uma representação em texto limpa do objeto.
+  // **[Propósito]** Retorna a representação textual do objeto para facilitar o debugging e logs do sistema.
   @override
   String toString() {
     return 'Usuario(id: $id, nome: $nome, telefone: $telefone, isAdmin: $isAdmin, autenticado: $autenticado)';

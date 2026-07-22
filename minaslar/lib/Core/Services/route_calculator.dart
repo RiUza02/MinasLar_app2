@@ -5,7 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../Errors/exceptions.dart';
 
-/// [uso] Armazena os dados processados de um endereço para o traçado do mapa.
+// **[Propósito]** Armazena os dados georreferenciados de um endereço para compor os waypoints da rota.
 class RouteStop {
   final String name;
   final double latitude;
@@ -18,9 +18,12 @@ class RouteStop {
   });
 }
 
-/// [uso] Coordena a conversão de endereços, otimização de paradas e abertura do GPS externo.
+// **[Propósito]** Coordena a conversão de endereços em coordenadas, otimização da ordem de visitas e abertura do GPS externo.
+// **[Como usar]** await RouteCalculator().optimizeAndOpenRoute(listaDeOrcamentos);
 class RouteCalculator {
-  /// [uso] Orquestra o fluxo completo da rota a partir de uma lista de orçamentos do dia.
+  // **[Propósito]** Orquestra o fluxo completo: obtém GPS atual, geocodifica os endereços, otimiza o trajeto e abre no mapa.
+  // **[Parâmetros]** budgetStops (List<Map<String, dynamic>>) -> Lista contendo os dados dos clientes/endereços do dia.
+  // **[Como usar]** await routeCalculator.optimizeAndOpenRoute([{'rua': 'Av...', 'numero': '10', 'bairro': 'Centro', 'cidade': 'JF'}]);
   Future<void> optimizeAndOpenRoute(
     List<Map<String, dynamic>> budgetStops,
   ) async {
@@ -28,17 +31,17 @@ class RouteCalculator {
       throw const ValidationException("Não há orçamentos para traçar rota.");
     }
 
-    // Obtém o ponto de partida do técnico baseado no hardware do GPS.
+    // Obtém a coordenada geodésica atual do dispositivo via GPS.
     final startPoint = await _getCurrentLocation();
 
-    // Converte os textos de endereço dos orçamentos em coordenadas geográficas paralelas.
+    // Converte os textos de endereço em coordenadas (Latitude/Longitude) em requisições paralelas.
     final List<Future<RouteStop?>> geocodingFutures = budgetStops.map((
       item,
     ) async {
       final address =
           "${item['rua']}, ${item['numero']} - ${item['bairro']}, ${item['cidade']}";
       try {
-        // [uso] Instancia o plugin para acessar a API nativa de geocodificação do dispositivo.
+        // **[Uso]** Aciona a API nativa de geocodificação do sistema operacional para buscar as coordenadas.
         List<Location> locations = await Geocoding().locationFromAddress(
           address,
         );
@@ -57,7 +60,7 @@ class RouteCalculator {
       return null;
     }).toList();
 
-    // Aguarda a resposta de todas as requisições de coordenadas e filtra as válidas.
+    // Aguarda o término de todas as conversões e descarta os endereços que não puderam ser localizados.
     final results = await Future.wait(geocodingFutures);
     final stops = results.whereType<RouteStop>().toList();
 
@@ -67,10 +70,10 @@ class RouteCalculator {
       );
     }
 
-    // Executa a ordenação lógica por proximidade física.
+    // Organiza as paradas gerando o percurso físico mais curto baseado na localização atual.
     final orderedRoute = _sortByProximity(startPoint, stops);
 
-    // Estrutura o link parametrizado e solicita a abertura do app nativo do Google Maps.
+    // Monta a URL parametrizada com os waypoints e lança o aplicativo nativo de mapas.
     final url = _buildGoogleMapsUrl(startPoint, orderedRoute);
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -81,7 +84,9 @@ class RouteCalculator {
     }
   }
 
-  /// [uso] Applies the Nearest Neighbor algorithm to sort stops by shortest physical distance.
+  // **[Propósito]** Aplica o algoritmo "Vizinho Mais Próximo" para ordenar as paradas pela menor distância física percorrida.
+  // **[Parâmetros]** origin (Position) -> Ponto inicial do técnico / unorderedList (List<RouteStop>) -> Lista bruta de destinos.
+  // **[Retorno]** List<RouteStop> -> Lista reordenada com a sequência otimizada de visitas.
   List<RouteStop> _sortByProximity(
     Position origin,
     List<RouteStop> unorderedList,
@@ -97,7 +102,7 @@ class RouteCalculator {
       var shortestDistance = double.infinity;
 
       for (final point in pending) {
-        // [uso] Mede a distância em metros em linha reta entre dois pontos geográficos.
+        // **[Uso]** Mede a distância em metros (linha reta) entre dois pares de coordenadas geográficas.
         final distance = Geolocator.distanceBetween(
           currentLat,
           currentLng,
@@ -117,13 +122,15 @@ class RouteCalculator {
         currentLat = nearest.latitude;
         currentLng = nearest.longitude;
       } else {
-        break; // Evita travamento por loop infinito em caso de dados corrompidos.
+        break; // Trava de segurança contra loops infinitos caso os cálculos de distância falhem.
       }
     }
     return finalRoute;
   }
 
-  /// [uso] Formata a URI baseada na API de Directions do Google Maps, incluindo os waypoints intermediários.
+  // **[Propósito]** Estrutura a URI no padrão Google Maps Directions API integrando ponto de partida, paradas intermediárias e destino final.
+  // **[Parâmetros]** origin (Position) -> Coordenadas de início / route (List<RouteStop>) -> Lista já ordenada de destinos.
+  // **[Retorno]** Uri -> Link completo pronto para execução pelo OS.
   Uri _buildGoogleMapsUrl(Position origin, List<RouteStop> route) {
     final strOrigin = "${origin.latitude},${origin.longitude}";
     final finalDestination = route.last;
@@ -142,7 +149,8 @@ class RouteCalculator {
     );
   }
 
-  /// [uso] Verifica o status do hardware de localização e solicita permissões de uso ao sistema operacional.
+  // **[Propósito]** Valida os serviços de GPS do sistema, solicita permissões se necessário e retorna as coordenadas do dispositivo.
+  // **[Retorno]** Future<Position> -> Objeto contendo os dados geográficos atuais da máquina.
   Future<Position> _getCurrentLocation() async {
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {

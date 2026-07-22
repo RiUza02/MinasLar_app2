@@ -4,16 +4,11 @@ import '../../../Features/Repositorios/orcamento_repository.dart';
 import '../../Orcamento/detalha_orcamento.dart';
 import '../Orcamentos/orcamento_history_card.dart';
 
-/// [uso] Exibe o histórico de orçamentos de um cliente,
-/// destacando um orçamento específico quando informado.
+// **[Propósito]** Componente visual e de estado (StatefulWidget) responsável por buscar e exibir a lista com o histórico de orçamentos de um cliente específico. Trata os estados de carregamento, erro e lista vazia, além de permitir o destaque de um orçamento e a navegação para seus detalhes.
+// **[Como usar]** ClienteOrcamentosHistory(clienteId: 'id_do_cliente', isAdmin: true, orcamentoIdDestaque: 'id_opcional_para_destaque');
 class ClienteOrcamentosHistory extends StatefulWidget {
-  /// Identificador do cliente.
   final String clienteId;
-
-  /// Indica se o usuário possui permissões de administrador.
   final bool isAdmin;
-
-  /// Id do orçamento que deve ser destacado na lista.
   final String? orcamentoIdDestaque;
 
   const ClienteOrcamentosHistory({
@@ -29,10 +24,7 @@ class ClienteOrcamentosHistory extends StatefulWidget {
 }
 
 class _ClienteOrcamentosHistoryState extends State<ClienteOrcamentosHistory> {
-  // Repositório responsável pela consulta dos orçamentos.
   final OrcamentoRepository _orcamentoRepository = OrcamentoRepository();
-
-  // Future utilizada pelo FutureBuilder.
   late Future<List<Map<String, dynamic>>> _historicoFuture;
 
   @override
@@ -41,7 +33,6 @@ class _ClienteOrcamentosHistoryState extends State<ClienteOrcamentosHistory> {
     _loadHistory();
   }
 
-  /// Carrega ou recarrega o histórico de orçamentos do cliente.
   void _loadHistory() {
     setState(() {
       _historicoFuture = _orcamentoRepository.buscarHistoricoPorCliente(
@@ -50,7 +41,6 @@ class _ClienteOrcamentosHistoryState extends State<ClienteOrcamentosHistory> {
     });
   }
 
-  /// Navega para a tela de detalhes do orçamento e atualiza a lista se houver modificação.
   void _navegarParaDetalhes(Map<String, dynamic> orcamento) async {
     final foiModificado = await Navigator.push<bool>(
       context,
@@ -62,7 +52,6 @@ class _ClienteOrcamentosHistoryState extends State<ClienteOrcamentosHistory> {
       ),
     );
 
-    // Se o orçamento foi alterado (editado/excluído), recarrega o histórico.
     if (foiModificado == true && mounted) {
       _loadHistory();
     }
@@ -73,22 +62,17 @@ class _ClienteOrcamentosHistoryState extends State<ClienteOrcamentosHistory> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Título da seção.
         const AppSectionHeader(
           icon: AppIcons.historico,
           title: 'HISTÓRICO DE ORÇAMENTOS',
         ),
-
-        // Aguarda o carregamento dos dados.
         FutureBuilder<List<Map<String, dynamic>>>(
           future: _historicoFuture,
           builder: (context, snapshot) {
-            // Exibe indicador de carregamento.
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            // Exibe mensagem em caso de erro.
             if (snapshot.hasError) {
               return const AppEmptyListIndicator(
                 message: "Não foi possível carregar o histórico.",
@@ -98,7 +82,6 @@ class _ClienteOrcamentosHistoryState extends State<ClienteOrcamentosHistory> {
 
             final orcamentos = snapshot.data ?? [];
 
-            // Exibe mensagem quando não há registros.
             if (orcamentos.isEmpty) {
               return const AppEmptyListIndicator(
                 message: "Nenhum orçamento registrado para este cliente.",
@@ -106,7 +89,6 @@ class _ClienteOrcamentosHistoryState extends State<ClienteOrcamentosHistory> {
               );
             }
 
-            // Lista os orçamentos encontrados.
             return ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -116,13 +98,8 @@ class _ClienteOrcamentosHistoryState extends State<ClienteOrcamentosHistory> {
 
                 return OrcamentoHistoryCard(
                   orcamento: orcamento,
-
-                  // Primeiro item representa o orçamento mais recente.
                   isLast: index == 0,
-
-                  // Destaca o orçamento informado.
                   isHighlight: orcamento['id'] == widget.orcamentoIdDestaque,
-
                   isAdmin: widget.isAdmin,
                   onActionCompleted: _loadHistory,
                   onTap: () => _navegarParaDetalhes(orcamento),

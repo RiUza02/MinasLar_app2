@@ -1,14 +1,12 @@
 import '../../../../Core/Design/design_system.dart';
 
-/// [uso] Permite selecionar o tipo de cliente entre
-/// Pessoa Física e Pessoa Jurídica.
+// **[Propósito]** Componente visual de seleção (estilo toggle ou segmented control) que permite ao usuário escolher o tipo de cliente, alternando facilmente entre "Pessoa Física" e "Pessoa Jurídica".
+// **[Como usar]** TipoPessoaSelector(isPessoaFisica: _isFisica, onChanged: (valor) => setState(() => _isFisica = valor));
 class TipoPessoaSelector extends StatelessWidget {
-  /// Indica se a opção selecionada é Pessoa Física.
   final bool isPessoaFisica;
-
-  /// Callback executado ao alterar a seleção.
   final ValueChanged<bool> onChanged;
 
+  // **[Propósito]** Constrói o seletor exigindo o estado atual da seleção (true para Pessoa Física) e a função de callback que será acionada informando a nova escolha.
   const TipoPessoaSelector({
     super.key,
     required this.isPessoaFisica,
@@ -18,7 +16,6 @@ class TipoPessoaSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      // Estilo do seletor.
       decoration: BoxDecoration(
         color: AppColors.inputBackground,
         borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
@@ -26,29 +23,20 @@ class TipoPessoaSelector extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Opção Pessoa Física.
           Expanded(child: _buildRadioButton(context, "Pessoa Física", true)),
-
-          // Divisor entre as opções.
           Container(width: 1, height: 40, color: AppColors.borderLight),
-
-          // Opção Pessoa Jurídica.
           Expanded(child: _buildRadioButton(context, "Pessoa Jurídica", false)),
         ],
       ),
     );
   }
 
-  /// [uso] Cria uma opção de seleção do tipo de pessoa.
+  // **[Propósito]** Método auxiliar responsável por construir cada botão individualmente, aplicando estilos visuais de destaque (cor e peso da fonte) caso a opção represente o valor selecionado.
   Widget _buildRadioButton(BuildContext context, String title, bool value) {
-    // Verifica se esta opção está selecionada.
     final isSelected = isPessoaFisica == value;
-
-    // Cor utilizada para a opção ativa.
     final activeColor = AppColors.primaryAlternative;
 
     return InkWell(
-      // Atualiza a seleção.
       onTap: () => onChanged(value),
       borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
       child: Padding(

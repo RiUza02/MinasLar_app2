@@ -8,6 +8,8 @@ import '../ListaCliente/cliente_list_header.dart';
 import '../../Cliente/cria_cliente.dart';
 import '../../HomePage/lista_cliente.dart';
 
+// **[Propósito]** Tela modal/página para seleção de cliente com suporte a busca em tempo real, ordenação, paginação infinita e adição rápida.
+// **[Como usar]** final clienteSelecionado = await Navigator.push<Cliente>(context, MaterialPageRoute(builder: (_) => const SelecionaClientePage()));
 class SelecionaClientePage extends StatefulWidget {
   const SelecionaClientePage({super.key});
 
@@ -16,11 +18,13 @@ class SelecionaClientePage extends StatefulWidget {
 }
 
 class _SelecionaClientePageState extends State<SelecionaClientePage> {
+  // **[Controladores e Repositório]** Controladores de scroll, input de busca e acesso à camada de dados
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
   final _repository = ClienteRepository();
   Timer? _debounce;
 
+  // **[Estado da Paginação]** Controle de controle de fluxo de dados paginados
   List<Cliente> _clientes = [];
   int _page = 1;
   final int _pageSize = 15;
@@ -29,6 +33,7 @@ class _SelecionaClientePageState extends State<SelecionaClientePage> {
   bool _hasMore = true;
   String? _error;
 
+  // **[Filtros e Ordenação]** Parâmetros de consulta dinâmicos
   String _searchTerm = '';
   ClienteSortColumn _sortColumn = ClienteSortColumn.nome;
   bool _sortAscending = true;
@@ -49,6 +54,7 @@ class _SelecionaClientePageState extends State<SelecionaClientePage> {
     super.dispose();
   }
 
+  // **[Paginação Infinita]** Monitora a rolagem para carregar mais dados antes de atingir o fim da página (limiar de 200px)
   void _setupScrollListener() {
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >=
@@ -60,6 +66,7 @@ class _SelecionaClientePageState extends State<SelecionaClientePage> {
     });
   }
 
+  // **[Carregamento de Dados]** Executa a busca paginada no repositório com tratamento centralizado de erros e estados de loading
   Future<void> _loadClientes({bool isPaginating = false}) async {
     if (!mounted) return;
     setState(() {
@@ -104,6 +111,7 @@ class _SelecionaClientePageState extends State<SelecionaClientePage> {
     }
   }
 
+  // **[Reset de Estado]** Reinicia o ponteiro da página e limpa a lista para reconsultas (ex: pull-to-refresh ou alteração de filtros)
   Future<void> _resetAndLoad() async {
     setState(() {
       _page = 1;
@@ -113,6 +121,7 @@ class _SelecionaClientePageState extends State<SelecionaClientePage> {
     await _loadClientes();
   }
 
+  // **[Debounce de Busca]** Aguarda 300ms de inatividade na digitação antes de disparar uma nova requisição ao repositório
   void _onSearchChanged() {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), () {
@@ -123,6 +132,7 @@ class _SelecionaClientePageState extends State<SelecionaClientePage> {
     });
   }
 
+  // **[Regra de Ordenação]** Inverte a direção se a mesma coluna for selecionada; caso contrário, aplica a direção padrão para o novo campo
   void _onSortChanged(ClienteSortColumn? newSort) {
     if (newSort == null) return;
     setState(() {
@@ -136,6 +146,7 @@ class _SelecionaClientePageState extends State<SelecionaClientePage> {
     _resetAndLoad();
   }
 
+  // **[Navegação: Cadastro]** Abre a tela de adição de cliente e recarrega a listagem se um novo cadastro for concluído
   Future<void> _abrirNovoCliente() async {
     final bool? clienteAdicionado = await Navigator.push(
       context,
@@ -167,6 +178,7 @@ class _SelecionaClientePageState extends State<SelecionaClientePage> {
       ),
       body: Column(
         children: [
+          // **[Cabeçalho]** Componente com campo de busca e ordenação
           ClienteListHeader(
             searchController: _searchController,
             sortColumn: _sortColumn,
@@ -179,6 +191,7 @@ class _SelecionaClientePageState extends State<SelecionaClientePage> {
     );
   }
 
+  // **[Gerenciamento da UI]** Trata visualmente os estados de carregamento inicial, erro, lista vazia e exibição de dados com scroll
   Widget _buildBody() {
     if (_isLoading && _clientes.isEmpty) {
       return const Center(
@@ -208,6 +221,7 @@ class _SelecionaClientePageState extends State<SelecionaClientePage> {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
         itemCount: _clientes.length + (_isLoadMore ? 1 : 0),
         itemBuilder: (context, index) {
+          // **[Feedback de Paginação]** Exibe um loader no final da lista durante o carregamento de mais itens
           if (index == _clientes.length) {
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 16.0),
@@ -219,9 +233,8 @@ class _SelecionaClientePageState extends State<SelecionaClientePage> {
           final cliente = _clientes[index];
           return ClienteCard(
             cliente: cliente,
-            onTap: () => Navigator.of(
-              context,
-            ).pop(cliente), // Retorna o cliente selecionado
+            // **[Retorno de Seleção]** Despacha o cliente selecionado para a rota anterior via Navigator.pop
+            onTap: () => Navigator.of(context).pop(cliente),
           );
         },
       ),

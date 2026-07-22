@@ -4,7 +4,8 @@ import '../../../Features/Modelos/usuario_model.dart';
 import 'profile_info_card.dart';
 import 'users_list_view.dart';
 
-/// [uso]: Corpo principal da tela de configurações, gerenciando os estados de carregamento, erro e conteúdo.
+// **[Propósito]** Componente visual que estrutura o corpo principal da tela de configurações. Gerencia dinamicamente os estados da interface (carregamento, erro e conteúdo completo), apresentando os dados do perfil do usuário logado e a lista da equipe autenticada, contando com suporte nativo a atualização via "pull-to-refresh".
+// **[Como usar]** SettingsBody(isLoading: _isLoading, currentUser: _user, authenticatedUsers: _teamList, errorMessage: _errorMsg, isAdmin: true, themeColor: AppColors.primary, onRefresh: () => _fetchData(), onTryAgain: () => _fetchData(), onEditProfile: () => _editProfile(), onUserLongPress: (user) => _showUserOptions(user));
 class SettingsBody extends StatelessWidget {
   final bool isLoading;
   final Usuario? currentUser;

@@ -10,6 +10,8 @@ class _StatusItem {
   _StatusItem({required this.label, required this.color, required this.icon});
 }
 
+// **[Propósito]** Componente que exibe os badges de status consolidados de um orçamento junto a um botão de ação rápida para alteração de estado.
+// **[Como usar]** StatusActionCard(orcamento: modeloOrcamento, onStatusChange: () => _abrirModalStatus());
 class StatusActionCard extends StatelessWidget {
   final Orcamento orcamento;
   final VoidCallback onStatusChange;
@@ -20,10 +22,7 @@ class StatusActionCard extends StatelessWidget {
     required this.onStatusChange,
   });
 
-  /// Retorna no máximo 2 status respeitando as regras de prioridade:
-  /// - Especial: CONCLUÍDO (sozinho)
-  /// - Comum: ATRASADO ou PENDENTE
-  /// - Incomum: URGENTE ou GARANTIA
+  // **[Regra de Negócio: Hierarquia de Status]** Consolida e retorna até 2 status simultâneos (Comum + Incomum) ou o estado final isolado (Concluído).
   List<_StatusItem> _obterListaStatus() {
     // 1. STATUS ESPECIAL (Concluído) -> Exibido sozinho com tema azul (AppColors.primary)
     if (orcamento.entregue) {
@@ -38,7 +37,7 @@ class StatusActionCard extends StatelessWidget {
 
     final List<_StatusItem> lista = [];
 
-    // 2. STATUS COMUM (Atrasado ou Pendente) -> Define o tema amarelo do card
+    // 2. STATUS COMUM (Atrasado ou Pendente) -> Define o tom primário do card
     if (orcamento.isAtrasado) {
       lista.add(
         _StatusItem(
@@ -57,7 +56,7 @@ class StatusActionCard extends StatelessWidget {
       );
     }
 
-    // 3. STATUS INCOMUM (Urgente ou Garantia)
+    // 3. STATUS INCOMUM (Urgente ou Garantia) -> Adicionado como segundo indicador visual quando aplicável
     if (orcamento.ehUrgente) {
       lista.add(
         _StatusItem(
@@ -83,7 +82,7 @@ class StatusActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusList = _obterListaStatus();
 
-    // O status principal (primeiro da lista) dita a cor do fundo e da borda do card
+    // **[Identidade Visual]** O status principal (primeiro elemento) dita o tom do fundo translúcido e da borda do container
     final corCardPrincipal = statusList.first.color;
 
     return Row(
@@ -95,7 +94,7 @@ class StatusActionCard extends StatelessWidget {
               horizontal: AppDimensions.spaceLarge,
             ),
             decoration: BoxDecoration(
-              // EFEITO VISUAL MANTIDO: fundo translúcido + borda colorida referente ao status
+              // Fundo levemente translúcido (alpha 38) com borda sólida no tom do status primário
               color: corCardPrincipal.withAlpha(38),
               borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
               border: Border.all(color: corCardPrincipal),
@@ -103,6 +102,7 @@ class StatusActionCard extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // **[Renderização de Badges]** Alterna os badges com um divisor vertical "|" quando houver mais de um status ativo
                 for (int i = 0; i < statusList.length; i++) ...[
                   if (i > 0) ...[
                     const SizedBox(width: AppDimensions.spaceSmall),
@@ -119,6 +119,8 @@ class StatusActionCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppDimensions.spaceMedium),
+
+        // **[Ação de Atualização]** Botão de atalho para disparar o callback de transição/alteração do status
         Container(
           decoration: BoxDecoration(
             color: AppColors.cardBackground,
@@ -138,6 +140,7 @@ class StatusActionCard extends StatelessWidget {
     );
   }
 
+  // **[Subcomponente]** Renderiza o par de ícone e rótulo para cada tag de status com tipografia e cor padronizadas
   Widget _buildStatusBadge(_StatusItem status) {
     return Row(
       mainAxisSize: MainAxisSize.min,

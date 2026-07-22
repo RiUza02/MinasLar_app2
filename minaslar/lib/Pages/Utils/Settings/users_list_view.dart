@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../Core/Widgets/widgets.dart';
 import '../../../Features/Modelos/usuario_model.dart';
 
-/// [uso]: Lista os integrantes da equipe com suporte a estado vazio e interações por gesto.
+// **[Propósito]** Componente visual responsável por renderizar a lista de usuários integrantes da equipe. Gerencia automaticamente o estado de lista vazia (exibindo um indicador padronizado) e mapeia os usuários existentes para cartões individuais (UserCard), repassando interações de toque longo.
+// **[Como usar]** UsersListView(users: listaDeUsuarios, onUserLongPress: (usuario) => _exibirOpcoesDoUsuario(usuario));
 class UsersListView extends StatelessWidget {
   final List<Usuario> users;
   final void Function(Usuario)? onUserLongPress;

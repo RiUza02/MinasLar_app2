@@ -1,6 +1,8 @@
 import '../../../../Core/Design/design_system.dart';
 import '../../HomePage/lista_orcamento.dart';
 
+// **[Propósito]** Cabeçalho de controle para a lista de orçamentos, integrando campo de busca reativo e menu de ordenação.
+// **[Como usar]** OrcamentoListHeader(searchController: _controller, sortColumn: _col, sortAscending: true, onSortChanged: (col) => ...);
 class OrcamentoListHeader extends StatelessWidget {
   final TextEditingController searchController;
   final OrcamentoSortColumn sortColumn;
@@ -25,7 +27,7 @@ class OrcamentoListHeader extends StatelessWidget {
       color: AppColors.cardBackground,
       child: Row(
         children: [
-          // Absorção do antigo OrcamentoSearchBar direto no Header
+          // **[Campo de Busca Reativo]** Monitora o texto digitado para alternar dinamicamente a exibição do botão de limpar
           Expanded(
             child: ValueListenableBuilder<TextEditingValue>(
               valueListenable: searchController,
@@ -96,6 +98,7 @@ class OrcamentoListHeader extends StatelessWidget {
     );
   }
 
+  // **[Menu de Ordenação]** Exibe as opções de classificação disponíveis e dispara a alteração via callback
   Widget _buildSortMenu(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
@@ -116,6 +119,7 @@ class OrcamentoListHeader extends StatelessWidget {
     );
   }
 
+  // **[Item de Ordenação]** Renderiza visualmente o estado de seleção do item e o sentido da ordenação (ascendente/descendente)
   PopupMenuItem<OrcamentoSortColumn> _buildSortMenuItem(
     OrcamentoSortColumn value,
     String text,

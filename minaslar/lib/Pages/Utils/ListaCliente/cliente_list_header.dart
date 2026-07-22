@@ -1,8 +1,9 @@
 import '../../../../Core/Design/design_system.dart';
-import '../../HomePage/lista_cliente.dart'; // For ClienteSortColumn
+import '../../HomePage/lista_cliente.dart';
 import 'cliente_search_bar.dart';
 
-/// [uso] Cabeçalho da lista de clientes, contendo a barra de busca e o menu de ordenação.
+// **[Propósito]** Componente visual que atua como cabeçalho da lista de clientes, agrupando de forma alinhada a barra de pesquisa textual e o menu de ordenação dos resultados.
+// **[Como usar]** ClienteListHeader(searchController: _controller, sortColumn: _currentSort, sortAscending: _isAscending, onSortChanged: (newSort) => _updateSort(newSort));
 class ClienteListHeader extends StatelessWidget {
   final TextEditingController searchController;
   final ClienteSortColumn sortColumn;
@@ -35,6 +36,7 @@ class ClienteListHeader extends StatelessWidget {
     );
   }
 
+  // **[Propósito]** Constrói o botão e o menu suspenso (dropdown) contendo as opções de critérios de ordenação da lista de clientes (ex: Último Atendimento, Nome, Rua, Bairro).
   Widget _buildSortMenu(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
@@ -59,6 +61,7 @@ class ClienteListHeader extends StatelessWidget {
     );
   }
 
+  // **[Propósito]** Constrói individualmente os itens do menu de ordenação, destacando visualmente qual é a opção ativa (com ícone e cor) e indicando se a ordem atual é crescente ou decrescente.
   PopupMenuItem<ClienteSortColumn> _buildSortMenuItem(
     ClienteSortColumn value,
     String text,

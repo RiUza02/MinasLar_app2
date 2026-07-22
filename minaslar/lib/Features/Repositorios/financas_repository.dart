@@ -1,6 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../Modelos/financas_model.dart';
 
+// **[Propósito]** Repositório responsável por buscar, formatar e processar os dados consolidados de finanças para exibição em gráficos e painéis da Dashboard.
+// **[Como usar]** final processador = ProcessaOrcamentos(); / final dados = await processador.buscarDadosDashboard();
 class ProcessaOrcamentos {
   final SupabaseClient _supabase = Supabase.instance.client;
 
@@ -19,7 +21,8 @@ class ProcessaOrcamentos {
     'DEZ',
   ];
 
-  /// Busca os dados consolidados da tabela `financas` para a Dashboard
+  // **[Propósito]** Busca os dados financeiros dos últimos 6 meses e estrutura os mapeamentos específicos necessários para renderizar os gráficos de faturamento, barras e distribuição por turnos.
+  // **[Retorno]** Future<Map<String, dynamic>> -> Mapa contendo a instância financeira do mês atual e as listas estruturadas para os gráficos.
   Future<Map<String, dynamic>> buscarDadosDashboard() async {
     // 1. Busca os dados dos últimos 6 meses no banco
     final response = await _supabase
@@ -76,7 +79,8 @@ class ProcessaOrcamentos {
     };
   }
 
-  /// Executa a RPC no Supabase para recalcular os últimos 6 meses
+  // **[Propósito]** Aciona uma procedure (RPC) diretamente no PostgreSQL do Supabase para recalcular e sincronizar os agregados financeiros dos últimos 6 meses.
+  // **[Retorno]** Future<int> -> Retorna o número estático representativo da quantidade de meses processados.
   Future<int> sincronizarFinancas() async {
     // Chama a função PostgreSQL criada no banco
     await _supabase.rpc('atualizar_financas_ultimos_6_meses');

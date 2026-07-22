@@ -1,7 +1,7 @@
 import '../../../../Core/Design/design_system.dart';
 
-/// [uso] Exibe um diálogo para importar os dados de um cliente
-/// a partir de um texto colado pelo usuário.
+// **[Propósito]** Componente visual de alerta (Dialog) interativo que permite ao usuário colar blocos de texto contendo dados brutos de um cliente (como mensagens de WhatsApp) para posterior extração e preenchimento automático.
+// **[Como usar]** final textoImportado = await showDialog<String>(context: context, builder: (_) => const ClienteImportDialog());
 class ClienteImportDialog extends StatefulWidget {
   const ClienteImportDialog({super.key});
 
@@ -10,12 +10,10 @@ class ClienteImportDialog extends StatefulWidget {
 }
 
 class _ClienteImportDialogState extends State<ClienteImportDialog> {
-  /// Controla o campo onde o texto é colado.
   final _importController = TextEditingController();
 
   @override
   void dispose() {
-    // Libera os recursos do controller.
     _importController.dispose();
     super.dispose();
   }
@@ -23,13 +21,10 @@ class _ClienteImportDialogState extends State<ClienteImportDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      // Aparência do diálogo.
       backgroundColor: AppColors.cardBackground,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
       ),
-
-      // Título.
       title: const Row(
         children: [
           Icon(AppIcons.importar, color: AppColors.primaryAlternative),
@@ -38,21 +33,16 @@ class _ClienteImportDialogState extends State<ClienteImportDialog> {
         ],
       ),
       titleTextStyle: AppTextStyles.titleMedium,
-
-      // Conteúdo do diálogo.
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Instruções para importação.
             Text(
               "Cole o texto abaixo na seguinte ordem:\n1. Nome\n2. Telefone\n3. Rua\n4. Número\n5. Bairro",
               style: AppTextStyles.bodyMediumSecondary.copyWith(fontSize: 13),
             ),
             const SizedBox(height: AppDimensions.spaceMedium),
-
-            // Campo para colar os dados.
             TextField(
               controller: _importController,
               maxLines: 8,
@@ -73,16 +63,11 @@ class _ClienteImportDialogState extends State<ClienteImportDialog> {
           ],
         ),
       ),
-
-      // Botões de ação.
       actions: [
-        // Fecha o diálogo sem importar.
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text("Cancelar"),
         ),
-
-        // Retorna o texto informado.
         ElevatedButton(
           onPressed: () {
             Navigator.pop(context, _importController.text);

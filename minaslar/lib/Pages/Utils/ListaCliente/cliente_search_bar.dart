@@ -1,6 +1,7 @@
 import '../../../../Core/Design/design_system.dart';
 
-/// [uso] Campo de texto estilizado para buscas em listas.
+// **[Propósito]** Componente visual de campo de texto (SearchBar) estilizado para realização de buscas e filtros em listas. Utiliza reatividade para exibir dinamicamente um botão de limpar (ícone "x") apenas quando há texto preenchido, dispensando a necessidade de converter a classe para um StatefulWidget.
+// **[Como usar]** ClienteSearchBar(controller: _searchController);
 class ClienteSearchBar extends StatelessWidget {
   final TextEditingController controller;
 

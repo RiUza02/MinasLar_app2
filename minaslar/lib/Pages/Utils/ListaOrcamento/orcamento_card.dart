@@ -2,6 +2,9 @@ import 'package:intl/intl.dart';
 import '../../../../Core/Design/design_system.dart';
 import '../../../../Features/Modelos/orcamento_model.dart';
 
+// **[Propósito]** Componente visual que exibe as informações resumidas de um orçamento em formato de cartão.
+// Avalia o estado atual do serviço (urgência, atraso, garantia, etc.) e aplica as cores e marcações correspondentes.
+// **[Como usar]** OrcamentoCard(orcamento: modeloOrcamento, isAdmin: true, onTap: () => abrirDetalhes());
 class OrcamentoCard extends StatelessWidget {
   final Orcamento orcamento;
   final bool isAdmin;
@@ -16,7 +19,7 @@ class OrcamentoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Formatação de Dados
+    // **[Formatação de Dados]** Normalização de datas e conversão monetária para exibição na UI
     final dataEntradaF = DateFormat('dd/MM/yy').format(orcamento.dataPega);
     final dataEntregaF = orcamento.dataEntrega != null
         ? DateFormat('dd/MM/yy').format(orcamento.dataEntrega!)
@@ -28,7 +31,7 @@ class OrcamentoCard extends StatelessWidget {
           ).format(orcamento.valor)
         : 'A Combinar';
 
-    // 2. Lógica de Status (Rigorosamente na ordem das 6 prioridades)
+    // **[Regra de Negócio: Status]** Definição da hierarquia de prioridades (1 a 6) para definição da tag e borda do cartão
     String statusText;
     Color statusColor;
     Color borderColor;
@@ -44,32 +47,32 @@ class OrcamentoCard extends StatelessWidget {
         dataEntregaDateOnly.isBefore(hoje);
 
     if (!orcamento.entregue && orcamento.ehUrgente) {
-      // 1º: Urgente, não entregue, retorno ou não -> Vermelho
+      // Prioridade 1: Urgente (Vermelho)
       statusText = "URGENTE";
       statusColor = Colors.red;
       borderColor = Colors.red;
     } else if (!orcamento.entregue && isAtrasado) {
-      // 2º: Atrasado, não entregue, retorno ou não -> Laranja
+      // Prioridade 2: Atrasado (Laranja)
       statusText = "ATRASADO";
       statusColor = Colors.orange;
       borderColor = Colors.orange;
     } else if (!orcamento.entregue && orcamento.ehRetorno) {
-      // 3º: Retorno (Garantia), não entregue -> Verde
+      // Prioridade 3: Retorno/Garantia (Verde)
       statusText = "GARANTIA";
       statusColor = Colors.green;
       borderColor = Colors.green;
     } else if (!orcamento.entregue && dataEntregaDateOnly != null) {
-      // 4º: Em prazo (não entregue) -> Azul
+      // Prioridade 4: Em prazo (Azul)
       statusText = "PENDENTE";
       statusColor = Colors.blue;
       borderColor = Colors.blue;
     } else if (orcamento.entregue) {
-      // 5º: Entregue -> Azul (Título riscado)
+      // Prioridade 5: Entregue/Concluído (Azul)
       statusText = "CONCLUÍDO";
       statusColor = Colors.blue;
       borderColor = Colors.blue;
     } else {
-      // 6º: Sem data (não entregue) -> Cinza
+      // Prioridade 6: Sem data de entrega definida (Cinza)
       statusText = "SEM DATA";
       statusColor = Colors.grey;
       borderColor = Colors.grey;
@@ -104,10 +107,11 @@ class OrcamentoCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppDimensions.spaceMedium),
+
+              // **[Identidade Visual]** Aplica risco no título caso o serviço já esteja entregue
               Text(
                 orcamento.titulo,
                 style: AppTextStyles.titleMedium.copyWith(
-                  // Aplica o risco no título caso o orçamento seja do 5º nível (Entregue)
                   decoration: orcamento.entregue
                       ? TextDecoration.lineThrough
                       : null,
@@ -136,6 +140,8 @@ class OrcamentoCard extends StatelessWidget {
                   ),
                 ],
               ),
+
+              // **[Controle de Acesso]** Exibição condicional do valor financeiro apenas para usuários com permissão administrativa
               if (isAdmin) ...[
                 const Divider(
                   height: AppDimensions.spaceXLarge,
@@ -161,6 +167,7 @@ class OrcamentoCard extends StatelessWidget {
   }
 }
 
+// **[Subcomponente]** Tag visual padronizada para exibir o badge de status (ex: URGENTE, PENDENTE)
 class _StatusTag extends StatelessWidget {
   final String text;
   final Color color;
@@ -186,6 +193,7 @@ class _StatusTag extends StatelessWidget {
   }
 }
 
+// **[Subcomponente]** Bloco focado em renderizar a relação entre a data de entrada e a previsão de entrega
 class _DateInfo extends StatelessWidget {
   final String entrada;
   final String entrega;
@@ -223,6 +231,7 @@ class _DateInfo extends StatelessWidget {
         Text(
           entrega,
           style: AppTextStyles.caption.copyWith(
+            // Destaca a data final de entrega caso o status corresponda a atraso
             color: isAtrasado ? Colors.orange : AppColors.textSecondary,
             fontWeight: FontWeight.bold,
           ),

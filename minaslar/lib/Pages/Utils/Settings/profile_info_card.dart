@@ -3,7 +3,8 @@ import '../../../../Core/Utils/formatters.dart';
 import '../../../../Core/Widgets/widgets.dart';
 import '../../../../Features/Modelos/usuario_model.dart';
 
-/// [uso]: Cartão de exibição das informações cadastrais do perfil do usuário logado.
+// **[Propósito]** Componente visual em formato de cartão (Card) responsável por centralizar e exibir as informações cadastrais essenciais do perfil do usuário logado (como nome e telefone formatado), além de fornecer uma ação rápida para edição destes dados.
+// **[Como usar]** ProfileInfoCard(currentUser: usuarioAtivo, onEdit: () => _abrirTelaEdicao(), themeColor: AppColors.primary);
 class ProfileInfoCard extends StatelessWidget {
   final Usuario currentUser;
   final VoidCallback onEdit;
@@ -42,7 +43,7 @@ class ProfileInfoCard extends StatelessWidget {
   }
 }
 
-/// [uso]: Componente utilitário privado para organizar uma linha com ícone, rótulo e valor.
+// **[Propósito]** Componente utilitário privado desenhado para estruturar e padronizar visualmente as linhas de informação do cartão, compondo lado a lado um ícone descritivo, o rótulo do dado (em letras maiúsculas) e o valor final.
 class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;

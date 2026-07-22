@@ -1,3 +1,5 @@
+// **[Propósito]** Modelo de dados que representa as estatísticas financeiras e operacionais consolidadas de um mês e ano específicos.
+// **[Como usar]** final financas = Financas(mes: 7, ano: 2026, faturamento: 1500.50); / final map = financas.toMap();
 class Financas {
   final String? id;
   final int mes;
@@ -12,6 +14,7 @@ class Financas {
   final int novosClientes;
   final int clientesProblematicos;
 
+  // **[Propósito]** Inicializa a entidade financeira com valores obrigatórios de período (mês/ano) e valores operacionais opcionais com padrão zero.
   const Financas({
     this.id,
     required this.mes,
@@ -27,6 +30,9 @@ class Financas {
     this.clientesProblematicos = 0,
   });
 
+  // **[Propósito]** Converte os dados brutos recebidos do banco de dados (Supabase) em uma instância tipada, tratando valores nulos e aplicando datas atuais como fallback.
+  // **[Parâmetros]** map (Map<String, dynamic>) -> Estrutura chave-valor contendo os dados do registro do banco.
+  // **[Retorno]** Financas -> Instância preenchida com os dados mapeados de forma segura.
   factory Financas.fromMap(Map<String, dynamic> map) {
     return Financas(
       id: map['id']?.toString(),
@@ -44,6 +50,8 @@ class Financas {
     );
   }
 
+  // **[Propósito]** Converte a instância atual em um formato serializado (Map) pronto para ser salvo ou atualizado no banco de dados.
+  // **[Retorno]** Map<String, dynamic> -> Mapa com as chaves snake_case correspondentes às colunas da tabela no Supabase.
   Map<String, dynamic> toMap() {
     return {
       if (id != null) 'id': id,

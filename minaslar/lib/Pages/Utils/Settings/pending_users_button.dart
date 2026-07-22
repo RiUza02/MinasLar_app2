@@ -1,6 +1,7 @@
 import '../../../../Core/Design/design_system.dart';
 
-/// [uso]: Botão flutuante estendido que exibe o número de aprovações pendentes para administradores.
+// **[Propósito]** Componente visual (FloatingActionButton estendido) focado em administradores, utilizado para alertar visualmente sobre a quantidade de usuários aguardando aprovação no sistema e fornecer acesso rápido a essa lista.
+// **[Como usar]** PendingUsersButton(count: 5, onPressed: () => _abrirTelaDeAprovacoes());
 class PendingUsersButton extends StatelessWidget {
   final int count;
   final VoidCallback onPressed;

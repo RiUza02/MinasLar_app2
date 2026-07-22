@@ -2,7 +2,8 @@ import '../../../../Core/Design/design_system.dart';
 import '../../../../Core/Utils/formatters.dart';
 import '../../../../Features/Modelos/cliente_model.dart';
 
-/// [uso]: Card para exibição dos dados cadastrais e histórico resumido do cliente em listagens.
+// **[Propósito]** Componente visual (Card) utilizado em listagens para exibir o resumo dos dados de um cliente. Apresenta informações como nome, telefone formatado, endereço, data do último serviço e destaca visualmente clientes marcados como problemáticos.
+// **[Como usar]** ClienteCard(cliente: modeloCliente, onTap: () => _abrirDetalhes());
 class ClienteCard extends StatelessWidget {
   final Cliente cliente;
   final VoidCallback onTap;
@@ -114,7 +115,7 @@ class ClienteCard extends StatelessWidget {
     );
   }
 
-  /// Tag privada para destaque visual de clientes sinalizados com problemas
+  // **[Propósito]** Constrói a tag (selo) visual de alerta indicando que o cliente está marcado como problemático, aplicando as cores e estilos de erro do design system.
   Widget _buildUrgenteTag() {
     return Container(
       padding: const EdgeInsets.symmetric(

@@ -3,7 +3,8 @@ import '../../../Core/Services/communication.dart';
 import '../../../Core/Design/borders.dart';
 import '../../../Core/Widgets/widgets.dart';
 
-/// [uso] Card para exibição de um orçamento na HomePage com destaque rigoroso para os 6 níveis de prioridade.
+// **[Propósito]** Componente visual em formato de cartão utilizado na página principal (HomePage) para exibir os detalhes essenciais de um orçamento. Implementa uma lógica rigorosa de 6 níveis de prioridade (Urgente, Atrasado, Garantia, Pendente, Concluído e Sem data) que define o destaque visual (cores e bordas) e os marcadores de status. Apresenta também informações de cliente, endereço de atendimento e atalhos de ações rápidas.
+// **[Como usar]** OrcamentoCard(orcamento: mapDoOrcamento, onCardTap: () => _abrirDetalhesDoOrcamento());
 class OrcamentoCard extends StatelessWidget {
   final Map<String, dynamic> orcamento;
   final VoidCallback onCardTap;
@@ -164,7 +165,7 @@ class OrcamentoCard extends StatelessWidget {
     );
   }
 
-  /// [uso] Renderiza o marcador visual correspondente ao turno agendado do atendimento.
+  // **[Propósito]** Renderiza o marcador visual correspondente ao turno agendado do atendimento.
   Widget _buildTurnoTag(
     Color corFaixa,
     IconData iconHorario,
@@ -197,7 +198,7 @@ class OrcamentoCard extends StatelessWidget {
     );
   }
 
-  /// [uso] Cria a tag visual do status (Urgente, Atrasado, Garantia, Concluído, etc.)
+  // **[Propósito]** Cria a tag visual do status (Urgente, Atrasado, Garantia, Concluído, etc.)
   Widget _buildStatusTag(String label, Color cor) {
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -220,7 +221,7 @@ class OrcamentoCard extends StatelessWidget {
     );
   }
 
-  /// [uso] Agrupa e exibe o nome do cliente e a descrição do serviço, aplicando risco no texto caso concluído.
+  // **[Propósito]** Agrupa e exibe o nome do cliente e a descrição do serviço, aplicando risco no texto caso concluído.
   Widget _buildClienteInfo(
     String nomeCliente,
     String tituloServico, {
@@ -265,7 +266,7 @@ class OrcamentoCard extends StatelessWidget {
     );
   }
 
-  /// [uso] Monta o bloco textual com os dados de localização e os botões de ação externos.
+  // **[Propósito]** Monta o bloco textual com os dados de localização e os botões de ação externos.
   Widget _buildEnderecoAcoes({
     required BuildContext context,
     required String rua,
@@ -312,7 +313,7 @@ class OrcamentoCard extends StatelessWidget {
     );
   }
 
-  /// [uso] Renderiza um atalho rápido interativo exibindo o número do telefone.
+  // **[Propósito]** Renderiza um atalho rápido interativo exibindo o número do telefone.
   Widget _buildTelefoneChip(String telefone) {
     return InkWell(
       onTap: () => LauncherUtils.abrirWhatsApp(telefone),
@@ -342,7 +343,7 @@ class OrcamentoCard extends StatelessWidget {
     );
   }
 
-  /// [uso] Constrói a coluna vertical contendo as ações de discagem, chat e GPS.
+  // **[Propósito]** Constrói a coluna vertical contendo as ações de discagem, chat e GPS.
   Widget _buildActionButtons({
     required BuildContext context,
     required String telefone,
@@ -386,7 +387,7 @@ class OrcamentoCard extends StatelessWidget {
   }
 }
 
-/// [uso] Widget interno que padroniza a estilização visual de todos os botões redondos de ação do card.
+// **[Propósito]** Componente utilitário privado que padroniza a estilização visual de todos os botões redondos de ação rápida (ligar, WhatsApp, mapa) do card.
 class _ActionButton extends StatelessWidget {
   final String tooltip;
   final IconData icon;

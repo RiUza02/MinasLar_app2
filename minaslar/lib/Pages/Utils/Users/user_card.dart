@@ -3,7 +3,8 @@ import '../../../Core/Services/communication.dart';
 import '../../../Core/Utils/formatters.dart';
 import '../../../Core/Design/design_system.dart';
 
-/// [uso]: Card customizável para exibição de informações cadastrais e ações rápidas de membros da equipe.
+// **[Propósito]** Componente visual em formato de cartão (Card) responsável por exibir as informações de um membro da equipe, gerando automaticamente um avatar com as iniciais do nome. Aplica destaque para administradores e disponibiliza atalhos rápidos nativos para comunicação (ligação e WhatsApp), permitindo também customização do widget final e interações via toque longo.
+// **[Como usar]** Padrão: UserCard(user: usuarioDaEquipe); Customizado: UserCard(user: usuario, onLongPress: (u) => _opcoesAdmin(u), trailing: Icon(Icons.check));
 class UserCard extends StatelessWidget {
   final Usuario user;
   final Widget? trailing;
@@ -133,7 +134,7 @@ class UserCard extends StatelessWidget {
   }
 }
 
-/// Tag privada para destaque visual de administradores
+// **[Propósito]** Componente utilitário privado que renderiza uma etiqueta (badge) para destacar visualmente os usuários que possuem privilégios de administrador na interface.
 class _AdminTag extends StatelessWidget {
   const _AdminTag();
 

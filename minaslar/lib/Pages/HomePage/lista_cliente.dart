@@ -20,7 +20,8 @@ class ListaClientePage extends StatefulWidget {
   State<ListaClientePage> createState() => _ListaClientePageState();
 }
 
-class _ListaClientePageState extends State<ListaClientePage> {
+class _ListaClientePageState extends State<ListaClientePage>
+    with AutomaticKeepAliveClientMixin {
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
   final _repository = ClienteRepository();
@@ -38,6 +39,9 @@ class _ListaClientePageState extends State<ListaClientePage> {
   String _searchTerm = '';
   ClienteSortColumn _sortColumn = ClienteSortColumn.ultimoAtendimento;
   bool _sortAscending = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -169,6 +173,7 @@ class _ListaClientePageState extends State<ListaClientePage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       floatingActionButton: widget.isAdmin

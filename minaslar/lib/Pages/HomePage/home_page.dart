@@ -1,6 +1,7 @@
 import '../../../core/Design/design_system.dart';
 import '../Settings/settings_page.dart';
 import 'agenda.dart';
+import 'dashboard.dart';
 import 'lista_cliente.dart';
 import 'lista_orcamento.dart';
 import 'overview.dart'; // Mantido conforme seu original (verifique se não há auto-referência cíclica no seu projeto)
@@ -10,8 +11,8 @@ import 'overview.dart'; // Mantido conforme seu original (verifique se não há 
 // ============================================================================
 // Status atual: 3/7 telas migradas. As demais estão operando via _placeholder.
 //
-// [ ] Dashboard  (Exclusivo Administrador)
-// [ ] Agenda     (Administrador / Usuário Comum)
+// [X] Dashboard  (Exclusivo Administrador)
+// [X] Agenda     (Administrador / Usuário Comum)
 // [ ] Assistente (Administrador / Usuário Comum)
 // [X] Home       (Adicionado)
 // [X] Clientes   (Adicionado)
@@ -91,6 +92,8 @@ class _HomePageState extends State<HomePage> {
     // Mapeia os itens da barra de navegação para as páginas correspondentes.
     _pages = _navBarItems.map((item) {
       switch (item.label) {
+        case 'Dashboard':
+          return const DashboardPage();
         case 'Home':
           return OverView(isAdmin: widget.isAdmin);
         case 'Clientes':

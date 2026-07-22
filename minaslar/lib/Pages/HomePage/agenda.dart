@@ -1,14 +1,17 @@
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../Core/Design/design_system.dart';
 import '../../Core/Errors/errors.dart';
 import '../../Core/Widgets/widgets.dart';
-import '../Orcamento/detalha_orcamento.dart';
 import '../Agenda/orcamentos_dia.dart';
+import '../Utils/Agenda/agenda_calendar.dart';
+import '../Utils/Agenda/agenda_event_list.dart';
+import '../Utils/Agenda/manage_day_button.dart';
 
+// **[Propósito]** Tela principal de gerenciamento de Agenda. Exibe um calendário interativo que permite visualizar e gerenciar orçamentos/compromissos agendados. Otimizada para buscar dados por blocos mensais no backend.
+// **[Como usar]** Geralmente inserida como uma das abas principais do aplicativo (ex: via BottomNavigationBar). Recebe a flag `isAdmin` para adaptar o layout (como a cor de destaque) e possivelmente os níveis de acesso a funcionalidades de edição nos subcomponentes.
 class AgendaPage extends StatefulWidget {
   final bool isAdmin;
 
@@ -17,6 +20,7 @@ class AgendaPage extends StatefulWidget {
   State<AgendaPage> createState() => _AgendaPageState();
 }
 
+// **[Comportamento: Retenção de Estado]** Implementa `AutomaticKeepAliveClientMixin` para garantir que o mês visualizado e a data selecionada não sejam resetados quando o usuário navegar para outras abas do aplicativo e voltar.
 class _AgendaPageState extends State<AgendaPage>
     with AutomaticKeepAliveClientMixin {
   @override
@@ -36,6 +40,7 @@ class _AgendaPageState extends State<AgendaPage>
   void initState() {
     super.initState();
     _selectedDay = _focusedDay;
+    // **[Comportamento: Identidade Visual]** Define a cor de destaque baseada no perfil de acesso (Admin vs Operacional).
     _corPrincipal = widget.isAdmin
         ? AppColors.primaryAlternative
         : AppColors.primary;
@@ -45,6 +50,7 @@ class _AgendaPageState extends State<AgendaPage>
   }
 
   // Lógica de Negócio
+  // **[Comportamento: Ordenação]** Garante que os compromissos marcados para o período da "manhã" apareçam primeiro nas listagens diárias.
   int _compararHorarios(dynamic a, dynamic b) {
     final horarioA = (a['horario_do_dia'] ?? '').toString().toLowerCase();
     final horarioB = (b['horario_do_dia'] ?? '').toString().toLowerCase();
@@ -55,6 +61,7 @@ class _AgendaPageState extends State<AgendaPage>
   }
 
   /// Busca no Supabase apenas os orçamentos pertencentes ao mês do [mesAlvo]
+  // **[Comportamento: Otimização de Rede]** Realiza o fetch em "lote" por mês. Isso evita múltiplas consultas ao banco de dados sempre que o usuário clica em um dia diferente.
   Future<void> _carregarEventosDoMes([DateTime? mesAlvo]) async {
     if (!mounted) return;
 
@@ -88,6 +95,7 @@ class _AgendaPageState extends State<AgendaPage>
       final List<dynamic> dados = response;
       final Map<DateTime, List<dynamic>> eventos = {};
 
+      // **[Comportamento: Normalização de Dados]** Mapeia a lista linear recebida do backend agrupando-os pelas datas exatas (zerando horas e minutos) para compatibilidade perfeita com o TableCalendar.
       for (var item in dados) {
         if (item['data_pega'] != null) {
           final dataOriginal = DateTime.tryParse(item['data_pega'] as String);
@@ -127,6 +135,41 @@ class _AgendaPageState extends State<AgendaPage>
     }
   }
 
+  void _handleDaySelected(DateTime selectedDay, DateTime focusedDay) {
+    if (!isSameDay(_selectedDay, selectedDay)) {
+      setState(() {
+        _selectedDay = selectedDay;
+        _focusedDay = focusedDay;
+        _eventosSelecionados = _getEventosDoDia(selectedDay);
+      });
+    }
+  }
+
+  // **[Comportamento: Paginação Inteligente]** Só dispara um novo carregamento de dados do servidor se a visualização do calendário navegar efetivamente para um novo mês/ano.
+  void _handlePageChange(DateTime focusedDay) {
+    final mesMudou =
+        focusedDay.month != _focusedDay.month ||
+        focusedDay.year != _focusedDay.year;
+
+    // Atualiza o foco visual do calendário imediatamente
+    setState(() {
+      _focusedDay = focusedDay;
+    });
+
+    // Carrega os dados apenas se o mês for diferente
+    if (mesMudou) {
+      _carregarEventosDoMes(focusedDay);
+    }
+  }
+
+  void _handleFormatChange(CalendarFormat format) {
+    if (_calendarFormat != format) {
+      setState(() {
+        _calendarFormat = format;
+      });
+    }
+  }
+
   List<dynamic> _getEventosDoDia(DateTime dia) {
     final dataNormalizada = DateTime(dia.year, dia.month, dia.day);
     final eventos = _eventosPorDia[dataNormalizada] ?? [];
@@ -144,7 +187,9 @@ class _AgendaPageState extends State<AgendaPage>
             isAdmin: widget.isAdmin,
           ),
         ),
-      ).then((_) => _carregarEventosDoMes(_focusedDay));
+      ).then(
+        (_) => _carregarEventosDoMes(_focusedDay),
+      ); // Recarrega os dados ao retornar para refletir possíveis edições
     }
   }
 
@@ -167,6 +212,7 @@ class _AgendaPageState extends State<AgendaPage>
       );
     }
 
+    // **[Subcomponente: Estrutura Principal]** Combina "Pull-to-refresh" na página inteira e empilha 3 componentes fundamentais da visão de agenda: O calendário interativo, um botão para a gestão do dia e uma lista rápida dos eventos.
     return RefreshIndicator(
       color: _corPrincipal,
       backgroundColor: AppColors.cardBackground,
@@ -175,269 +221,28 @@ class _AgendaPageState extends State<AgendaPage>
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: AppDimensions.spaceXXLarge),
         children: [
-          _buildCalendar(),
+          AgendaCalendar(
+            focusedDay: _focusedDay,
+            selectedDay: _selectedDay,
+            calendarFormat: _calendarFormat,
+            onDaySelected: _handleDaySelected,
+            onPageChanged: _handlePageChange,
+            onFormatChanged: _handleFormatChange,
+            eventLoader: _getEventosDoDia,
+            corPrincipal: _corPrincipal,
+          ),
           const SizedBox(height: AppDimensions.spaceXLarge),
-          _buildManageDayButton(),
+          ManageDayButton(
+            selectedDay: _selectedDay,
+            onPressed: _navegarParaListaDoDia,
+          ),
           const SizedBox(height: AppDimensions.spaceXLarge),
-          _buildEventsList(),
+          AgendaEventList(
+            eventos: _eventosSelecionados,
+            isAdmin: widget.isAdmin,
+            onRefresh: () => _carregarEventosDoMes(_focusedDay),
+          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCalendar() {
-    return TableCalendar(
-      locale: 'pt_BR',
-      firstDay: DateTime.utc(2020, 1, 1),
-      lastDay: DateTime.utc(2030, 12, 31),
-      focusedDay: _focusedDay,
-      calendarFormat: _calendarFormat,
-      headerStyle: HeaderStyle(
-        titleCentered: true,
-        formatButtonVisible: false,
-        titleTextStyle: AppTextStyles.titleMedium,
-        leftChevronIcon: const Icon(
-          Icons.chevron_left,
-          color: AppColors.textPrimary,
-        ),
-        rightChevronIcon: const Icon(
-          Icons.chevron_right,
-          color: AppColors.textPrimary,
-        ),
-      ),
-      calendarStyle: CalendarStyle(
-        defaultTextStyle: const TextStyle(color: AppColors.textPrimary),
-        weekendTextStyle: const TextStyle(color: AppColors.error),
-        outsideTextStyle: const TextStyle(color: AppColors.textDisabled),
-        selectedDecoration: BoxDecoration(
-          color: _corPrincipal,
-          shape: BoxShape.circle,
-        ),
-        todayDecoration: BoxDecoration(
-          color: Colors.transparent,
-          shape: BoxShape.circle,
-          border: Border.all(color: AppColors.adminColor, width: 2.0),
-        ),
-        todayTextStyle: AppTextStyles.bodyMediumBold.copyWith(
-          color: AppColors.adminColor,
-        ),
-      ),
-      // RENDERIZADOR CUSTOMIZADO DAS BOLINHAS (1 bolinha por orçamento)
-      calendarBuilders: CalendarBuilders(
-        markerBuilder: (context, day, events) {
-          if (events.isEmpty) return const SizedBox();
-
-          return Positioned(
-            bottom: 2,
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 2.0,
-              runSpacing: 1.0,
-              children: List.generate(
-                events.length,
-                (index) => Container(
-                  width: 5.0,
-                  height: 5.0,
-                  decoration: BoxDecoration(
-                    color: _corPrincipal,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-      selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-      onDaySelected: (selectedDay, focusedDay) {
-        setState(() {
-          _selectedDay = selectedDay;
-          _focusedDay = focusedDay;
-          _eventosSelecionados = _getEventosDoDia(selectedDay);
-        });
-      },
-      onFormatChanged: (format) => setState(() => _calendarFormat = format),
-      // Dispara a consulta no Supabase ao trocar de mês
-      onPageChanged: (focusedDay) {
-        final mesMudou =
-            focusedDay.month != _focusedDay.month ||
-            focusedDay.year != _focusedDay.year;
-
-        _focusedDay = focusedDay;
-
-        if (mesMudou) {
-          _carregarEventosDoMes(focusedDay);
-        }
-      },
-      eventLoader: _getEventosDoDia,
-    );
-  }
-
-  Widget _buildManageDayButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.spaceLarge),
-      child: SizedBox(
-        width: double.infinity,
-        height: AppDimensions.buttonHeight,
-        child: ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.adminColor,
-            foregroundColor: Colors.black,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
-            ),
-          ),
-          onPressed: _navegarParaListaDoDia,
-          icon: const Icon(Icons.list_alt),
-          label: Text(
-            "Gerenciar Dia (${DateFormat("d/MM").format(_selectedDay!)})",
-            style: AppTextStyles.button.copyWith(color: Colors.black),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEventsList() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(
-            left: AppDimensions.spaceLarge,
-            bottom: AppDimensions.spaceMedium,
-          ),
-          child: Text(
-            "Orçamentos deste dia:",
-            style: AppTextStyles.bodyLargeBold,
-          ),
-        ),
-        if (_eventosSelecionados.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDimensions.spaceLarge,
-              vertical: AppDimensions.spaceXXLarge,
-            ),
-            child: AppEmptyListIndicator(
-              message: "Nenhum serviço agendado.",
-              icon: AppIcons.evento,
-            ),
-          )
-        else
-          ..._eventosSelecionados.map((item) => _buildEventCard(item)),
-      ],
-    );
-  }
-
-  Widget _buildEventCard(Map<String, dynamic> item) {
-    final titulo = item['titulo'] ?? 'Sem Título';
-    final clienteData = item['clientes'];
-    final nomeCliente = clienteData?['nome'] ?? 'Cliente não identificado';
-    final bairroCliente = clienteData?['bairro'] ?? '';
-    final horario = item['horario_do_dia'] ?? 'Manhã';
-    final isTarde = horario.toString().toLowerCase() == 'tarde';
-
-    final iconHorario = isTarde ? AppIcons.tarde : AppIcons.manha;
-    final colorHorario = isTarde
-        ? AppColors.afternoonShift
-        : AppColors.morningShift;
-
-    return Card(
-      color: AppColors.cardBackground,
-      margin: const EdgeInsets.symmetric(
-        horizontal: AppDimensions.spaceLarge,
-        vertical: AppDimensions.spaceSmall,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
-        side: const BorderSide(color: AppColors.borderLight),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppDimensions.spaceLarge,
-          vertical: AppDimensions.spaceMedium,
-        ),
-        leading: Container(
-          padding: const EdgeInsets.all(AppDimensions.spaceSmall),
-          decoration: BoxDecoration(
-            color: Colors.black38,
-            borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-          ),
-          child: Icon(iconHorario, color: colorHorario, size: 24),
-        ),
-        title: Text(titulo, style: AppTextStyles.bodyMediumBold),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: AppDimensions.spaceXSmall),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    AppIcons.cliente,
-                    size: AppDimensions.iconSizeXSmall,
-                    color: AppColors.textDisabled,
-                  ),
-                  const SizedBox(width: AppDimensions.spaceXSmall),
-                  Expanded(
-                    child: Text(
-                      nomeCliente,
-                      style: AppTextStyles.bodySmall,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppDimensions.spaceSmall),
-              Row(
-                children: [
-                  const Icon(
-                    AppIcons.bairro,
-                    size: AppDimensions.iconSizeXSmall,
-                    color: AppColors.textDisabled,
-                  ),
-                  const SizedBox(width: AppDimensions.spaceXSmall),
-                  Expanded(
-                    child: Text(
-                      bairroCliente,
-                      style: AppTextStyles.bodySmall,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.spaceSmall,
-            vertical: AppDimensions.spaceXSmall,
-          ),
-          decoration: BoxDecoration(
-            color: colorHorario.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-            border: Border.all(color: colorHorario.withValues(alpha: 0.5)),
-          ),
-          child: Text(
-            horario.toUpperCase(),
-            style: AppTextStyles.caption.copyWith(
-              color: colorHorario,
-              fontSize: 10,
-            ),
-          ),
-        ),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DetalhesOrcamento(
-                orcamentoInicial: item,
-                isAdmin: widget.isAdmin,
-              ),
-            ),
-          ).then((_) => _carregarEventosDoMes(_focusedDay));
-        },
       ),
     );
   }

@@ -4,12 +4,12 @@ import 'agenda.dart';
 import 'dashboard.dart';
 import 'lista_cliente.dart';
 import 'lista_orcamento.dart';
-import 'overview.dart'; // Mantido conforme seu original (verifique se não há auto-referência cíclica no seu projeto)
+import 'overview.dart';
 
 // ============================================================================
 // REGISTRO DE MIGRAÇÃO DE TELAS (DIRETÓRIO: 'Rascunho' -> Design System)
 // ============================================================================
-// Status atual: 3/7 telas migradas. As demais estão operando via _placeholder.
+// Status atual: 6/7 telas migradas. As demais estão operando via _placeholder.
 //
 // [X] Dashboard  (Exclusivo Administrador)
 // [X] Agenda     (Administrador / Usuário Comum)
@@ -20,11 +20,8 @@ import 'overview.dart'; // Mantido conforme seu original (verifique se não há 
 // [X] Configurações (Adicionado)
 // ============================================================================
 
-/// [uso] Tela principal de navegação (Shell) pós-login.
-///
-/// Controla a exibição das seções por meio de um [PageView] e uma
-/// [BottomNavigationBar], adaptando as opções exibidas conforme o perfil
-/// definido por [isAdmin].
+// **[Propósito]** Tela principal de navegação (Shell) pós-login.
+// **[Como usar]** Controla a exibição das seções por meio de um [PageView] e uma [BottomNavigationBar], adaptando as opções exibidas conforme o perfil definido por [isAdmin].
 class HomePage extends StatefulWidget {
   final bool isAdmin;
   final String nomeUsuario;
@@ -36,6 +33,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  // **[Estado Local]** Controladores de navegação, roteamento e interface.
   late final PageController _pageController;
   late int _selectedIndex;
 
@@ -46,7 +44,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
 
-    // Configuração de rotas e índices conforme as permissões de acesso
+    // **[Comportamento: Configuração de Perfil]** Configuração de rotas e índices conforme as permissões de acesso
     if (widget.isAdmin) {
       _selectedIndex = 3; // Inicia na tela "Home"
       _navBarItems = const [
@@ -89,7 +87,7 @@ class _HomePageState extends State<HomePage> {
       ];
     }
 
-    // Mapeia os itens da barra de navegação para as páginas correspondentes.
+    // **[Comportamento: Mapeamento de Rotas]** Mapeia os itens da barra de navegação para as páginas correspondentes.
     _pages = _navBarItems.map((item) {
       switch (item.label) {
         case 'Dashboard':
@@ -116,7 +114,7 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  /// [uso] Executa a transição animada entre as telas do PageView.
+  // **[Ação: Animação de Navegação]** Executa a transição animada entre as telas do PageView.
   void _navegarParaPagina(int index) {
     _pageController.animateToPage(
       index,
@@ -125,14 +123,14 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// [uso] Sincroniza o índice da barra de navegação com o gesto de mudança de página.
+  // **[Ação: Sincronização de Estado]** Sincroniza o índice da barra de navegação com o gesto de mudança de página.
   void _onPageChanged(int index) {
     setState(() {
       _selectedIndex = index;
     });
   }
 
-  /// [uso] Gera uma interface visual temporária para telas ainda não implementadas.
+  // **[Subcomponente: Interface Temporária]** Gera uma interface visual para telas ainda não implementadas.
   Widget _placeholder(String label) {
     return Center(
       child: Padding(
@@ -169,10 +167,9 @@ class _HomePageState extends State<HomePage> {
     final Color navBarColor = widget.isAdmin
         ? AppColors.primaryAlternative
         : AppColors.primary;
-    final String currentPageTitle = _navBarItems[_selectedIndex].label!; //
+    final String currentPageTitle = _navBarItems[_selectedIndex].label!;
 
     return Scaffold(
-      // MODIFICAÇÃO: O AppBar inteiro agora é condicional e tem tamanho personalizado
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(40.0),
         child: AppBar(
@@ -196,7 +193,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
-      ), // 👈 Faz a barra sumir por completo em qualquer aba que não seja a Home![cite: 7]
+      ),
       body: PageView(
         controller: _pageController,
         onPageChanged: _onPageChanged,

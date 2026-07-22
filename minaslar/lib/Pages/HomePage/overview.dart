@@ -4,7 +4,8 @@ import '../../../Core/Services/route_calculator.dart';
 import '../../../Core/Widgets/widgets.dart';
 import '../../../Features/Repositorios/orcamento_repository.dart';
 
-/// [uso]: Tela principal de agendamentos do dia adaptada ao perfil do usuário (Admin ou Técnico).
+// **[Propósito]** Tela principal de agendamentos do dia adaptada ao perfil do usuário (Admin ou Técnico).
+// **[Como usar]** Utilizada como uma aba da navegação principal: OverView(isAdmin: usuario.isAdmin)
 class OverView extends StatefulWidget {
   final bool isAdmin;
 
@@ -34,7 +35,8 @@ class _OverViewState extends State<OverView>
     _futureOrcamentos = _orcamentoRepository.buscarOrcamentosDoDia();
   }
 
-  /// [uso]: Recarrega a lista de agendamentos e atualiza o estado para a animação do Pull-to-Refresh.
+  // **[Ação: Atualizar Lista]** Recarrega a lista de agendamentos e atualiza o estado para a animação do Pull-to-Refresh.
+  // **[Origem]** A busca de dados é implementada no método buscarOrcamentosDoDia do OrcamentoRepository.
   Future<void> _atualizarLista() async {
     final novaConsulta = _orcamentoRepository.buscarOrcamentosDoDia();
     setState(() {
@@ -43,7 +45,8 @@ class _OverViewState extends State<OverView>
     await novaConsulta;
   }
 
-  /// [uso]: Extrai os endereços da lista de agendamentos e abre o aplicativo de mapas com a rota otimizada.
+  // **[Ação: Gerar Rota]** Extrai os endereços da lista de agendamentos e abre o aplicativo de mapas com a rota otimizada.
+  // **[Origem]** A lógica de otimização e abertura de mapas está encapsulada em RouteCalculator.optimizeAndOpenRoute.
   Future<void> _gerarRota() async {
     if (_listaDeOrcamentosDoDia.isEmpty) {
       AppFeedback.show(
@@ -82,7 +85,7 @@ class _OverViewState extends State<OverView>
     }
   }
 
-  /// [uso]: Constrói o botão flutuante (FAB) de rota para perfil administrador.
+  // **[Subcomponente: FAB]** Constrói o botão flutuante de rota exclusivo para o perfil administrador.
   Widget _buildAdminFab() {
     return FloatingActionButton(
       heroTag: "btnRota",
@@ -108,7 +111,8 @@ class _OverViewState extends State<OverView>
             return Center(child: CircularProgressIndicator(color: _themeColor));
           }
 
-          // Exibe tela de erro amigável
+          // **[Estado Visual: Erro]** Exibe tela de erro amigável
+          // **[Origem]** Tratamento de mensagens de erro provém de ErrorHandler.mapearErro e AppErrorView.
           if (snapshot.hasError) {
             return AppErrorView(
               message: ErrorHandler.mapearErro(snapshot.error!),
@@ -138,7 +142,7 @@ class _OverViewState extends State<OverView>
                 AppDimensions.spaceLarge,
                 AppDimensions.spaceLarge,
                 AppDimensions.spaceLarge,
-                90,
+                90, // Espaçamento inferior para o FAB não cobrir o último item
               ),
               itemCount: orcamentos.length,
               physics: const AlwaysScrollableScrollPhysics(),
@@ -157,7 +161,7 @@ class _OverViewState extends State<OverView>
     );
   }
 
-  /// [uso]: Exibe a mensagem de lista vazia mantendo o gesto de Pull-to-Refresh habilitado.
+  // **[Estado Visual: Vazio]** Exibe a mensagem de lista vazia mantendo o gesto de Pull-to-Refresh habilitado.
   Widget _buildEmptyState() {
     return RefreshIndicator(
       onRefresh: _atualizarLista,

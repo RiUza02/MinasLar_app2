@@ -8,10 +8,11 @@ import '../Cliente/cria_cliente.dart';
 import '../Cliente/detalha_cliente.dart';
 import '../Utils/ListaCliente/cliente_list_header.dart';
 
-/// Colunas disponíveis para ordenação da lista.
+// Colunas disponíveis para ordenação da lista.
 enum ClienteSortColumn { ultimoAtendimento, nome, rua, bairro }
 
-/// Tela principal de listagem paginada e busca de clientes.
+// **[Propósito]** Tela principal de listagem paginada e busca de clientes. Possui debounce na pesquisa, paginação infinita e ordenação.
+// **[Como usar]** Empregada como uma aba da navegação principal, repassando a permissão do usuário logado: ListaClientePage(isAdmin: usuario.isAdmin)
 class ListaClientePage extends StatefulWidget {
   final bool isAdmin;
   const ListaClientePage({super.key, required this.isAdmin});
@@ -27,6 +28,7 @@ class _ListaClientePageState extends State<ListaClientePage>
   final _repository = ClienteRepository();
   Timer? _debounce;
 
+  // **[Estado Local]** Controle de lista, paginação e visualização.
   List<Cliente> _clientes = [];
   int _page = 1;
   final int _pageSize = 10;
@@ -59,7 +61,7 @@ class _ListaClientePageState extends State<ListaClientePage>
     super.dispose();
   }
 
-  /// [uso]: Configura o listener de rolagem para disparar a paginação infinita ao se aproximar do fim da lista.
+  // **[Comportamento: Infinite Scroll]** Configura o listener de rolagem para disparar a paginação infinita ao se aproximar do fim da lista.
   void _setupScrollListener() {
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >=
@@ -71,7 +73,8 @@ class _ListaClientePageState extends State<ListaClientePage>
     });
   }
 
-  /// [uso]: Busca os clientes no repositório tratando estados de carregamento, paginação e erros.
+  // **[Ação: Carregar Clientes]** Busca os clientes no repositório tratando estados de carregamento, paginação e erros.
+  // **[Origem]** A comunicação com o banco de dados paginado está no método buscarClientesPaginados do ClienteRepository. O tratamento de exceções utiliza o ErrorHandler.mapearErro.
   Future<void> _loadClientes({bool isPaginating = false}) async {
     if (!mounted) return;
 
@@ -121,7 +124,7 @@ class _ListaClientePageState extends State<ListaClientePage>
     }
   }
 
-  /// [uso]: Reseta a paginação e a lista de resultados para recarregar a busca do zero.
+  // **[Ação: Reset de Estado]** Reseta a paginação e a lista de resultados para recarregar a busca do zero.
   Future<void> _resetAndLoad() async {
     setState(() {
       _page = 1;
@@ -131,7 +134,7 @@ class _ListaClientePageState extends State<ListaClientePage>
     await _loadClientes();
   }
 
-  /// [uso]: Controla o tempo de espera (debounce de 500ms) durante a digitação antes de disparar a pesquisa.
+  // **[Comportamento: Debounce de Busca]** Controla o tempo de espera (debounce de 300ms) durante a digitação antes de disparar a pesquisa, otimizando requisições.
   void _onSearchChanged() {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), () {
@@ -144,7 +147,7 @@ class _ListaClientePageState extends State<ListaClientePage>
     });
   }
 
-  /// [uso]: Altera o campo ou a direção da ordenação dos clientes e reinicia a listagem.
+  // **[Ação: Alterar Ordenação]** Altera o campo ou a direção da ordenação dos clientes e reinicia a listagem.
   void _onSortChanged(ClienteSortColumn? newSort) {
     if (newSort == null) return;
 
@@ -160,7 +163,8 @@ class _ListaClientePageState extends State<ListaClientePage>
     _resetAndLoad();
   }
 
-  /// [uso]: Abre a tela de criação de um novo cliente e atualiza a lista se um cliente for adicionado.
+  // **[Ação: Novo Cliente]** Abre a tela de criação de um novo cliente e atualiza a lista se um cliente for adicionado.
+  // **[Origem]** A interface e lógica de cadastro completo do cliente são gerenciadas pela classe AdicionarClientePage.
   Future<void> _abrirNovoCliente() async {
     final bool? clienteAdicionado = await Navigator.push(
       context,
@@ -187,6 +191,7 @@ class _ListaClientePageState extends State<ListaClientePage>
           : null,
       body: Column(
         children: [
+          // Componente de cabeçalho com barra de pesquisa e filtros.
           ClienteListHeader(
             searchController: _searchController,
             sortColumn: _sortColumn,
@@ -199,7 +204,8 @@ class _ListaClientePageState extends State<ListaClientePage>
     );
   }
 
-  /// [uso]: Constrói o corpo da tela exibindo indicador de carga, erro, lista vazia ou a listagem de clientes.
+  // **[Subcomponente: Corpo Principal]** Constrói o corpo da tela exibindo indicador de carga, erro, lista vazia ou a listagem de clientes.
+  // **[Origem]** Ao clicar em um cliente na lista, a navegação direciona o usuário para DetalhesClientePage.
   Widget _buildBody() {
     // Exibe indicador central quando estiver carregando e sem dados na tela
     if (_isLoading && _clientes.isEmpty) {
@@ -255,7 +261,7 @@ class _ListaClientePageState extends State<ListaClientePage>
           AppDimensions.spaceLarge,
           AppDimensions.spaceSmall,
           AppDimensions.spaceLarge,
-          90,
+          90, // Margem inferior para evitar sobreposição pelo FAB
         ),
         physics: const AlwaysScrollableScrollPhysics(),
         itemCount: _clientes.length + (_isLoadMore ? 1 : 0),
@@ -277,7 +283,7 @@ class _ListaClientePageState extends State<ListaClientePage>
     );
   }
 
-  /// [uso]: Exibe o indicador de progresso no rodapé da lista durante a paginação.
+  // **[Estado Visual: Carregando Mais]** Exibe o indicador de progresso no rodapé da lista durante a paginação.
   Widget _buildLoadingIndicator() {
     return const Padding(
       padding: EdgeInsets.symmetric(vertical: 16.0),

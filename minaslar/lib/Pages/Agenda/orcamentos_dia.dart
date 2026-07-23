@@ -9,6 +9,8 @@ import '../../Features/Modelos/cliente_model.dart';
 import '../Orcamento/cria_orcamento.dart';
 import '../Utils/ListaOrcamento/seleciona_cliente.dart';
 
+// **[Propósito]** Tela responsável por exibir e gerenciar a lista detalhada de orçamentos (agendamentos) de um dia específico.
+// **[Como usar]** Chamada por navegação (geralmente pelo ManageDayButton no calendário). Recebe a `dataSelecionada` para buscar os registros no banco de dados e a flag `isAdmin` para habilitar ou ocultar funcionalidades gerenciais, como criação de orçamento e otimização de rotas.
 class OrcamentosDia extends StatefulWidget {
   final DateTime dataSelecionada;
   final bool isAdmin;
@@ -31,6 +33,7 @@ class _OrcamentosDiaState extends State<OrcamentosDia> {
   @override
   void initState() {
     super.initState();
+    // **[Comportamento: Identidade Visual Dinâmica]** Ajusta a cor principal do tema da tela dependendo do nível de acesso do usuário, destacando visualmente se ele está em um contexto administrativo ou comum.
     _themeColor = widget.isAdmin
         ? AppColors.primaryAlternative
         : AppColors.primary;
@@ -39,6 +42,7 @@ class _OrcamentosDiaState extends State<OrcamentosDia> {
 
   /// Busca no Supabase os orçamentos do dia selecionado.
   Future<List<Map<String, dynamic>>> _buscarOrcamentosDoDiaSelecionado() async {
+    // **[Comportamento: Filtragem Temporal]** Estabelece as fronteiras de tempo (00:00:00 a 23:59:59) da data selecionada para garantir que a consulta SQL busque exclusivamente os agendamentos daquele dia.
     final inicioDia = DateTime(
       widget.dataSelecionada.year,
       widget.dataSelecionada.month,
@@ -65,6 +69,7 @@ class _OrcamentosDiaState extends State<OrcamentosDia> {
     return orcamentos;
   }
 
+  // **[Comportamento: Regra de Negócio - Ordenação]** Calcula um peso de prioridade para cada orçamento. A lógica de negócio prioriza primeiro eventos urgentes da manhã, depois eventos normais da manhã, seguidos por urgentes da tarde e por fim os da tarde normais.
   int _getPrioridade(Map<String, dynamic> orcamento) {
     final bool isUrgente = orcamento['eh_urgente'] == true;
     final bool isManha =
@@ -104,6 +109,7 @@ class _OrcamentosDiaState extends State<OrcamentosDia> {
     AppFeedback.show(context, "Calculando a melhor rota...");
 
     try {
+      // **[Comportamento: Integração Logística]** Mapeia a lista atual de orçamentos extraindo dados cruciais (rua, bairro, numero) para delegar ao serviço [RouteCalculator] a abertura e cálculo de trajeto em apps de navegação externos.
       final routeCalculator = RouteCalculator();
       final List<Map<String, dynamic>> stopsData = _listaDeOrcamentosDoDia.map((
         orc,
@@ -203,6 +209,8 @@ class _OrcamentosDiaState extends State<OrcamentosDia> {
             ? AppColors.primaryAlternative
             : AppColors.primary,
       ),
+
+      // **[Comportamento: Controles Administrativos]** Renderiza condicionalmente as ações flutuantes (Adicionar Orçamento e Gerar Rota) agrupadas em uma coluna. Se não for administrador, omite por completo devolvendo null.
       floatingActionButton: widget.isAdmin
           ? Column(
               mainAxisSize: MainAxisSize.min,
@@ -254,7 +262,7 @@ class _OrcamentosDiaState extends State<OrcamentosDia> {
                 AppDimensions.spaceLarge,
                 AppDimensions.spaceLarge,
                 AppDimensions.spaceLarge,
-                90,
+                90, // Padding extra na base para evitar sobreposição de conteúdo pela Floating Action Button.
               ),
               itemCount: orcamentos.length,
               physics: const AlwaysScrollableScrollPhysics(),

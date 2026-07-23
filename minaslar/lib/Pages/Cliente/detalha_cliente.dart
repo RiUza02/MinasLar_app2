@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../Core/Design/design_system.dart';
@@ -13,9 +14,11 @@ import '../../Features/Repositorios/cliente_repository.dart';
 import 'edita_cliente.dart';
 import '../Orcamento/cria_orcamento.dart';
 
-// O widget AppInfoRow foi criado em 'lib/Core/Widgets/app_info_row.dart'
-// e exportado em 'lib/Core/Widgets/widgets.dart' para que este import funcione.
-
+/// [Objetivo] Tela de detalhamento completo de um cliente cadastrado.
+///
+/// [Fluxo] Exibe a ficha cadastral do cliente, atalhos de contato/localização,
+/// e o histórico de orçamentos vinculados. Permite atualização via Pull-To-Refresh,
+/// edição de dados e exclusão do registro (restruto por permissão de Admin).
 class DetalhesClientePage extends StatefulWidget {
   final Cliente cliente;
   final bool isAdmin;
@@ -33,18 +36,34 @@ class DetalhesClientePage extends StatefulWidget {
 }
 
 class _DetalhesClientePageState extends State<DetalhesClientePage> {
-  late Cliente _clienteExibido;
-  late final Color corTema;
+  // [Repositório] Instância responsável pelo acesso a dados do cliente.
   final _clienteRepository = ClienteRepository();
+
+  // [Estado Local] Armazena a instância atual do cliente e controla cor do tema visual.
+  late Cliente _clienteExibido;
+  late final Color _corTema;
+
+  // [Chave Reativa] Utilizada para forçar a recarga do widget de histórico de orçamentos.
   Key _orcamentoHistoryKey = UniqueKey();
 
   @override
   void initState() {
     super.initState();
     _clienteExibido = widget.cliente;
-    corTema = widget.isAdmin ? AppColors.primaryAlternative : AppColors.primary;
+    _corTema = widget.isAdmin
+        ? AppColors.primaryAlternative
+        : AppColors.primary;
   }
 
+  /// [Objetivo] Formata o endereço completo do cliente para exibição.
+  String get _enderecoFormatado {
+    final comp = _clienteExibido.complemento;
+    final temComplemento = comp != null && comp.trim().isNotEmpty;
+    final sufixoComplemento = temComplemento ? ' ($comp)' : '';
+    return '${_clienteExibido.rua}, ${_clienteExibido.numero}$sufixoComplemento - ${_clienteExibido.bairro}';
+  }
+
+  /// [Objetivo] Recarrega os dados do cliente e atualiza o histórico de orçamentos via Pull-To-Refresh.
   Future<void> _atualizarTela() async {
     if (_clienteExibido.id == null) return;
 
@@ -70,6 +89,7 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
     }
   }
 
+  /// [Objetivo] Executa a exclusão irreversível do cliente e seus registros vinculados após confirmação.
   Future<void> _excluirCliente() async {
     final bool? confirmar = await showDialog<bool>(
       context: context,
@@ -101,14 +121,16 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
     try {
       await _clienteRepository.excluirCliente(_clienteExibido.id!);
 
-      if (mounted) {
-        AppFeedback.show(
-          context,
-          'Cliente excluído com sucesso!',
-          type: FeedbackType.success,
-        );
-        Navigator.of(context).pop(true);
-      }
+      if (!mounted) return;
+
+      AppFeedback.show(
+        context,
+        'Cliente excluído com sucesso!',
+        type: FeedbackType.success,
+      );
+
+      // [Navegação] Retorna para a tela anterior sinalizando a alteração na lista.
+      Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
       AppFeedback.show(
@@ -119,8 +141,9 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
     }
   }
 
+  /// [Objetivo] Copia um texto para a área de transferência do dispositivo.
   void _copiarParaClipboard(String texto, String item) {
-    if (texto.isEmpty) return;
+    if (texto.trim().isEmpty) return;
     Clipboard.setData(ClipboardData(text: texto));
     AppFeedback.show(context, '$item copiado!');
   }
@@ -129,11 +152,13 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+
+      // [Barra de Título] Customizada com ações operacionais dinâmicas conforme perfil (Admin).
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(40.0),
         child: AppBar(
           title: const Text("Detalhes do Cliente"),
-          backgroundColor: corTema,
+          backgroundColor: _corTema,
           centerTitle: true,
           actions: widget.isAdmin
               ? [
@@ -164,6 +189,8 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
               : [],
         ),
       ),
+
+      // [Ação Primária] Botão flutuante para abertura rápida de um novo orçamento.
       floatingActionButton: widget.isAdmin
           ? FloatingActionButton(
               onPressed: () async {
@@ -181,14 +208,16 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
                   });
                 }
               },
-              backgroundColor: corTema,
+              backgroundColor: _corTema,
               foregroundColor: AppColors.textPrimary,
               child: const Icon(AppIcons.adicionarOrcamento),
             )
           : null,
+
+      // [Corpo] Conteúdo rolável suportando Pull-To-Refresh para sincronização.
       body: RefreshIndicator(
         onRefresh: _atualizarTela,
-        color: corTema,
+        color: _corTema,
         backgroundColor: AppColors.cardBackground,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -196,20 +225,24 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // [UI] Card principal de identificação do cliente.
               ClienteHeaderCard(cliente: _clienteExibido),
               const SizedBox(height: AppDimensions.spaceLarge),
+
+              // [UI] Card com atalhos operacionais de comunicação (Telefone/WhatsApp).
               ClienteContatoCard(
                 cliente: _clienteExibido,
-                themeColor: corTema,
+                themeColor: _corTema,
                 onCopyToClipboard: _copiarParaClipboard,
               ),
+
+              // [UI] Exibição condicional do Endereço.
               if (_clienteExibido.rua.isNotEmpty) ...[
                 const SizedBox(height: AppDimensions.spaceMedium),
                 AppInfoRow(
                   icon: AppIcons.endereco,
                   label: "Endereço",
-                  value:
-                      '${_clienteExibido.rua}, ${_clienteExibido.numero}${_clienteExibido.complemento != null && _clienteExibido.complemento!.isNotEmpty ? ' (${_clienteExibido.complemento})' : ''} - ${_clienteExibido.bairro}',
+                  value: _enderecoFormatado,
                   onLongPress: () => _copiarParaClipboard(
                     '${_clienteExibido.rua}, ${_clienteExibido.numero}',
                     'Endereço',
@@ -223,6 +256,8 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
                   ),
                 ),
               ],
+
+              // [UI] Exibição condicional do CPF.
               if (_clienteExibido.cpf != null &&
                   _clienteExibido.cpf!.isNotEmpty) ...[
                 const SizedBox(height: AppDimensions.spaceMedium),
@@ -234,6 +269,8 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
                       _copiarParaClipboard(_clienteExibido.cpf!, 'CPF'),
                 ),
               ],
+
+              // [UI] Exibição condicional do CNPJ.
               if (_clienteExibido.cnpj != null &&
                   _clienteExibido.cnpj!.isNotEmpty) ...[
                 const SizedBox(height: AppDimensions.spaceMedium),
@@ -245,6 +282,8 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
                       _copiarParaClipboard(_clienteExibido.cnpj!, 'CNPJ'),
                 ),
               ],
+
+              // [UI] Exibição condicional das Observações.
               if (_clienteExibido.observacao != null &&
                   _clienteExibido.observacao!.isNotEmpty) ...[
                 const SizedBox(height: AppDimensions.spaceMedium),
@@ -255,7 +294,10 @@ class _DetalhesClientePageState extends State<DetalhesClientePage> {
                   isMultiline: true,
                 ),
               ],
+
               const SizedBox(height: AppDimensions.spaceXLarge),
+
+              // [UI] Histórico completo de orçamentos associados ao cliente.
               if (_clienteExibido.id != null)
                 ClienteOrcamentosHistory(
                   key: _orcamentoHistoryKey,

@@ -4,10 +4,9 @@ import '../../core/utils/formatters.dart';
 import '../../core/errors/errors.dart';
 import '../../core/widgets/widgets.dart';
 
-/// Tela responsável pelo registro de novos usuários no aplicativo.
+/// [Objetivo] Tela de cadastro de novos usuários.
 ///
-/// [Fluxo]: Valida os dados de entrada localmente com regras de formatação e
-/// feedback visual e, em seguida, realiza a persistência na tabela `usuarios` do Supabase.
+/// [Fluxo] Valida entradas localmente, aplica formatações e persiste o registro na tabela `usuarios` do Supabase.
 class CriarContaPage extends StatefulWidget {
   const CriarContaPage({super.key});
 
@@ -16,15 +15,16 @@ class CriarContaPage extends StatefulWidget {
 }
 
 class _CriarContaPageState extends State<CriarContaPage> {
+  // [Chave] Controla a validação do formulário.
   final _formKey = GlobalKey<FormState>();
 
-  // Controladores dos campos de texto
+  // [Controladores] Gerenciam os inputs de texto.
   late final TextEditingController _nomeController;
   late final TextEditingController _telefoneController;
   late final TextEditingController _senhaController;
   late final TextEditingController _confirmaSenhaController;
 
-  // Estados reativos da interface
+  // [Estados Reativos] Controlam loading, visibilidade e feedbacks de validação.
   bool _isLoading = false;
   bool _senhaValida = false;
   bool _telefoneValido = false;
@@ -42,6 +42,7 @@ class _CriarContaPageState extends State<CriarContaPage> {
 
   @override
   void dispose() {
+    // [Descarte] Libera memória dos controladores.
     _nomeController.dispose();
     _telefoneController.dispose();
     _senhaController.dispose();
@@ -49,48 +50,47 @@ class _CriarContaPageState extends State<CriarContaPage> {
     super.dispose();
   }
 
-  /// Conecta à API do Supabase e insere o novo registro no banco.
-  ///
-  /// Gerencia o estado de carregamento do botão principal e exibe feedbacks
-  /// ao usuário via [SnackBar] em caso de sucesso ou erro.
+  /// [Objetivo] Valida o formulário, sanitiza dados e executa o insert no Supabase.
   Future<void> _realizarCadastro() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-    FocusScope.of(context).unfocus();
+    FocusScope.of(context).unfocus(); // Oculta o teclado.
 
     try {
+      // [Sanitização] Mantém apenas dígitos inteiros.
       final telefoneLimpo = _telefoneController.text.replaceAll(
         RegExp(r'[^0-9]'),
         '',
       );
 
+      // [Persistência] Envia dados ao Supabase (criptografia da senha via backend).
       await Supabase.instance.client.from('usuarios').insert({
         'nome': _nomeController.text.trim(),
         'telefone': telefoneLimpo,
-        'senha': _senhaController.text, // Criptografia tratada pelo backend
+        'senha': _senhaController.text,
       });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              "Conta criada! Aguarde a liberação do administrador.",
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context);
-      }
+      if (!mounted) return;
+
+      // [Sucesso] Exibe feedback visual e retorna à tela anterior.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Conta criada! Aguarde a liberação do administrador."),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
     } catch (e) {
-      if (mounted) {
-        final mensagemErro = ErrorHandler.mapearErro(e);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(mensagemErro), backgroundColor: Colors.red),
-        );
-      }
+      if (!mounted) return;
+
+      // [Tratamento de Erro] Exibe mensagem tratada na UI.
+      final mensagemErro = ErrorHandler.mapearErro(e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(mensagemErro), backgroundColor: Colors.red),
+      );
     } finally {
-      // Garante o encerramento do indicador de carregamento
+      // [Reset] Encerra o estado de carregamento.
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -100,6 +100,7 @@ class _CriarContaPageState extends State<CriarContaPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
+        // [Layout] Permite scroll em telas pequenas sem perder ancoragem do rodapé em telas maiores.
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
@@ -115,7 +116,7 @@ class _CriarContaPageState extends State<CriarContaPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // --- BOTÃO DE VOLTAR ---
+                          // [Navegação] Retorno para tela anterior.
                           Align(
                             alignment: Alignment.centerLeft,
                             child: IconButton(
@@ -131,7 +132,7 @@ class _CriarContaPageState extends State<CriarContaPage> {
                           ),
                           const SizedBox(height: AppDimensions.spaceSmall),
 
-                          // --- CABEÇALHO DO FORMULÁRIO ---
+                          // [UI] Título do formulário.
                           const Icon(
                             AppIcons.criarContaHeader,
                             size: AppDimensions.iconSizeLarge,
@@ -145,7 +146,7 @@ class _CriarContaPageState extends State<CriarContaPage> {
                           ),
                           const SizedBox(height: AppDimensions.spaceXLarge),
 
-                          // --- DADOS PESSOAIS ---
+                          // [Seção] Identificação do usuário.
                           AppCardContainer(
                             titulo: "DADOS PESSOAIS",
                             icone: AppIcons.dadosPessoaisSection,
@@ -188,7 +189,7 @@ class _CriarContaPageState extends State<CriarContaPage> {
 
                           const SizedBox(height: AppDimensions.spaceLarge),
 
-                          // --- SEGURANÇA ---
+                          // [Seção] Credenciais de acesso.
                           AppCardContainer(
                             titulo: "SEGURANÇA",
                             icone: AppIcons.segurancaSection,
@@ -230,6 +231,7 @@ class _CriarContaPageState extends State<CriarContaPage> {
                                 icon: AppIcons.confirmaSenha,
                                 obscureText: !_mostrarConfirmaSenha,
                                 textInputAction: TextInputAction.done,
+                                // [UX] Dispara o cadastro pela tecla 'Done' do teclado.
                                 onFieldSubmitted: (_) => _realizarCadastro(),
                                 onChanged: (_) => setState(() {}),
                                 validator: (v) {
@@ -256,10 +258,10 @@ class _CriarContaPageState extends State<CriarContaPage> {
                             ],
                           ),
 
-                          // Preenche o espaço livre para empurrar os botões para o rodapé
+                          // [Espaçador] Empurra o bloco de ação para o rodapé.
                           const Spacer(),
 
-                          // --- AÇÃO PRINCIPAL ---
+                          // [Ação Principal] Botão de submissão do cadastro.
                           ElevatedButton(
                             onPressed: _isLoading ? null : _realizarCadastro,
                             child: _isLoading
@@ -276,7 +278,7 @@ class _CriarContaPageState extends State<CriarContaPage> {
 
                           const SizedBox(height: AppDimensions.spaceMedium),
 
-                          // --- REDIRECIONAMENTO PARA LOGIN ---
+                          // [Navegação] Rota alternativa para usuários já cadastrados.
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [

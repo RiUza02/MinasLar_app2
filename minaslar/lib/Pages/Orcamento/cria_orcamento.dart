@@ -8,6 +8,12 @@ import '../../Features/Modelos/cliente_model.dart';
 import '../../Features/Modelos/orcamento_model.dart';
 import '../../Features/Repositorios/orcamento_repository.dart';
 
+/// [Visão Geral]
+/// Tela responsável por formulário de criação de novos orçamentos.
+///
+/// [Uso]
+/// Navegar para esta tela fornecendo obrigatoriamente um objeto [Cliente]
+/// e, opcionalmente, uma [dataSelecionada] inicial para o agendamento.
 class AdicionarOrcamento extends StatefulWidget {
   final Cliente cliente;
   final DateTime? dataSelecionada;
@@ -23,17 +29,18 @@ class AdicionarOrcamento extends StatefulWidget {
 }
 
 class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
+  // [Gerenciamento de Estado do Formulário]
   final _formKey = GlobalKey<FormState>();
   final _repository = OrcamentoRepository();
   bool _isLoading = false;
 
-  // Controladores de Texto
+  // [Controladores de Texto]
   final _tituloController = TextEditingController();
   final _descricaoController = TextEditingController();
   final _valorController = TextEditingController();
   final _taxaEntregaController = TextEditingController();
 
-  // Estado Local (Substituindo os antigos Controllers externos)
+  // [Campos de Estado Local]
   late DateTime _dataPega;
   DateTime? _dataEntrega;
   Turno _horarioSelecionado = Turno.manha;
@@ -44,11 +51,13 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
   @override
   void initState() {
     super.initState();
+    // [Inicialização] Define a data de entrada padrão com o valor passado ou o momento atual
     _dataPega = widget.dataSelecionada ?? DateTime.now();
   }
 
   @override
   void dispose() {
+    // [Limpeza] Libera os recursos dos controladores para prevenir vazamentos de memória
     _tituloController.dispose();
     _descricaoController.dispose();
     _valorController.dispose();
@@ -56,6 +65,11 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
     super.dispose();
   }
 
+  /// [Ação] Exibe o seletor de data customizado com o tema dark do sistema.
+  ///
+  /// [Como Usar]
+  /// Passar [isEntrega]: true para definir a data limite do serviço,
+  /// ou [isEntrega]: false para a data de recolhimento do item.
   Future<void> _selecionarData({required bool isEntrega}) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -81,6 +95,7 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
           _dataEntrega = picked;
         } else {
           _dataPega = picked;
+          // [Regra de Negócio] Reseta a entrega se ela for anterior à nova data de entrada
           if (_dataEntrega != null && _dataEntrega!.isBefore(_dataPega)) {
             _dataEntrega = null;
           }
@@ -89,8 +104,22 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
     }
   }
 
+  /// [Regra de Negócio]
+  /// Sanitiza e converte strings de valor monetário (R$ 0.000,00) para [double].
+  double? _parseValorMonetario(String texto) {
+    if (texto.trim().isEmpty) return null;
+    final limpo = texto
+        .replaceAll('R\$', '')
+        .replaceAll('.', '')
+        .replaceAll(',', '.')
+        .trim();
+    return double.tryParse(limpo);
+  }
+
+  /// [Ação] Submete os dados do formulário para persistência no banco de dados.
   Future<void> _salvarOrcamento() async {
     if (!_formKey.currentState!.validate()) return;
+
     if (widget.cliente.id == null) {
       AppFeedback.show(
         context,
@@ -103,26 +132,6 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
     setState(() => _isLoading = true);
 
     try {
-      double? valorFinal;
-      if (_valorController.text.isNotEmpty) {
-        final limpo = _valorController.text
-            .replaceAll('R\$', '')
-            .replaceAll('.', '')
-            .replaceAll(',', '.')
-            .trim();
-        valorFinal = double.tryParse(limpo);
-      }
-
-      double? taxaEntregaFinal;
-      if (_taxaEntregaController.text.isNotEmpty) {
-        final limpo = _taxaEntregaController.text
-            .replaceAll('R\$', '')
-            .replaceAll('.', '')
-            .replaceAll(',', '.')
-            .trim();
-        taxaEntregaFinal = double.tryParse(limpo);
-      }
-
       final novoOrcamento = Orcamento(
         clienteId: widget.cliente.id!,
         cliente: widget.cliente,
@@ -130,8 +139,8 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
         descricao: _descricaoController.text.trim().isEmpty
             ? null
             : _descricaoController.text.trim(),
-        valor: valorFinal,
-        taxaEntrega: taxaEntregaFinal,
+        valor: _parseValorMonetario(_valorController.text),
+        taxaEntrega: _parseValorMonetario(_taxaEntregaController.text),
         dataPega: _dataPega,
         dataEntrega: _dataEntrega,
         horarioDoDia: _horarioSelecionado,
@@ -182,7 +191,7 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Cabeçalho Simples de Leitura do Cliente
+              // [Seção] Card Informativo do Cliente
               Container(
                 padding: const EdgeInsets.all(AppDimensions.spaceMedium),
                 decoration: BoxDecoration(
@@ -223,7 +232,7 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
               ),
               const SizedBox(height: AppDimensions.spaceLarge),
 
-              // DADOS DO SERVIÇO (Absorvendo ServicoCard)
+              // [Seção] Formulário: Dados Principais do Serviço
               AppCardContainer(
                 titulo: 'DETALHES DO SERVIÇO',
                 icone: AppIcons.descricao,
@@ -245,7 +254,7 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
               ),
               const SizedBox(height: AppDimensions.spaceLarge),
 
-              // FINANCEIRO (Absorvendo FinanceiroCard)
+              // [Seção] Formulário: Valores e Custos
               AppCardContainer(
                 titulo: 'VALORES E PAGAMENTO',
                 icone: AppIcons.valor,
@@ -267,7 +276,7 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
               ),
               const SizedBox(height: AppDimensions.spaceLarge),
 
-              // PRAZOS E HORÁRIOS (Absorvendo PrazosCard + seletores de 2º nível)
+              // [Seção] Formulário: Seleção de Datas e Turnos
               AppCardContainer(
                 titulo: 'PRAZOS E HORÁRIOS',
                 icone: AppIcons.calendario,
@@ -324,7 +333,7 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
               ),
               const SizedBox(height: AppDimensions.spaceLarge),
 
-              // STATUS DO SERVIÇO (Absorvendo StatusCard)
+              // [Seção] Formulário: Flags e Indicadores de Status
               AppCardContainer(
                 titulo: 'STATUS DO SERVIÇO',
                 icone: AppIcons.info,
@@ -365,7 +374,7 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
               ),
               const SizedBox(height: AppDimensions.spaceXXLarge),
 
-              // Botão Principal (Sem arquivo de BottomBar separado)
+              // [Ação Principal] Botão de Salvar
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryAlternative,
@@ -384,7 +393,7 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
     );
   }
 
-  // Componentes visuais locais de 1º nível (evita criar arquivos de 2º nível para botões simples)
+  /// [Componente Auxiliar] Botão customizado para seleção de turno (Manhã/Tarde).
   Widget _buildTurnoBtn(String texto, IconData icone, Color cor, Turno turno) {
     final isSelected = _horarioSelecionado == turno;
     return Expanded(
@@ -429,6 +438,7 @@ class _AdicionarOrcamentoState extends State<AdicionarOrcamento> {
     );
   }
 
+  /// [Componente Auxiliar] Seletor interativo de data com suporte a reset (limpeza).
   Widget _buildDataBtn(
     String label,
     String valor,

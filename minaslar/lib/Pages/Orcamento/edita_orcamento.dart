@@ -6,6 +6,12 @@ import '../../Core/Widgets/widgets.dart';
 import '../../Features/Modelos/orcamento_model.dart';
 import '../../Features/Repositorios/orcamento_repository.dart';
 
+/// [Visão Geral]
+/// Tela de formulário responsável por editar as informações de um orçamento já existente.
+///
+/// [Uso]
+/// Recebe os dados do orçamento através do parâmetro [orcamento] (como `Map<String, dynamic>`),
+/// permite a alteração de campos do serviço, prazos, valores e status, e envia as atualizações ao repositório.
 class EditarOrcamento extends StatefulWidget {
   final Map<String, dynamic> orcamento;
 
@@ -16,10 +22,12 @@ class EditarOrcamento extends StatefulWidget {
 }
 
 class _EditarOrcamentoState extends State<EditarOrcamento> {
+  // [Gerenciamento de Estado e Repositório]
   final _formKey = GlobalKey<FormState>();
   final _repository = OrcamentoRepository();
   bool _isLoading = false;
 
+  // [Controllers e Campos Locais]
   late final Orcamento _orcamentoOriginal;
   late final TextEditingController _tituloController;
   late final TextEditingController _descricaoController;
@@ -36,6 +44,7 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
   @override
   void initState() {
     super.initState();
+    // [Inicialização de Dados] Converte o mapa recebido na model e preenche os controllers/estados
     _orcamentoOriginal = Orcamento.fromMap(widget.orcamento);
 
     _tituloController = TextEditingController(text: _orcamentoOriginal.titulo);
@@ -66,6 +75,7 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
 
   @override
   void dispose() {
+    // [Gerenciamento de Memória] Desaloca controllers do formulário
     _tituloController.dispose();
     _descricaoController.dispose();
     _valorController.dispose();
@@ -73,6 +83,8 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
     super.dispose();
   }
 
+  /// [Ação / Regra de Negócio]
+  /// Exibe o modal DatePicker e garante a consistência das datas (a entrega não pode ser anterior à entrada).
   Future<void> _selecionarData({required bool isEntrega}) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -98,6 +110,7 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
           _dataEntrega = picked;
         } else {
           _dataPega = picked;
+          // Reseta a data de entrega se a nova data de entrada for posterior a ela
           if (_dataEntrega != null && _dataEntrega!.isBefore(_dataPega)) {
             _dataEntrega = null;
           }
@@ -106,6 +119,8 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
     }
   }
 
+  /// [Ação / Persistência]
+  /// Valida as entradas do formulário, trata valores numéricos monetários e persiste as edições no banco.
   Future<void> _salvarEdicao() async {
     if (!_formKey.currentState!.validate()) return;
     if (_orcamentoOriginal.id == null) return;
@@ -113,6 +128,7 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
     setState(() => _isLoading = true);
 
     try {
+      // Sanitização de valores em moeda pt_BR para formato double
       double? valorFinal;
       if (_valorController.text.isNotEmpty) {
         final limpo = _valorController.text
@@ -193,6 +209,7 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // [Seção] Informações Gerais do Serviço
               AppCardContainer(
                 titulo: 'DETALHES DO SERVIÇO',
                 icone: AppIcons.descricao,
@@ -214,6 +231,7 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
               ),
               const SizedBox(height: AppDimensions.spaceLarge),
 
+              // [Seção] Configurações de Valores e Taxas
               AppCardContainer(
                 titulo: 'VALORES E PAGAMENTO',
                 icone: AppIcons.valor,
@@ -235,6 +253,7 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
               ),
               const SizedBox(height: AppDimensions.spaceLarge),
 
+              // [Seção] Prazos de Agendamento e Seleção de Turno
               AppCardContainer(
                 titulo: 'PRAZOS E HORÁRIOS',
                 icone: AppIcons.calendario,
@@ -291,6 +310,7 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
               ),
               const SizedBox(height: AppDimensions.spaceLarge),
 
+              // [Seção] Opções de Status e Atributos de Controle
               AppCardContainer(
                 titulo: 'STATUS DO SERVIÇO',
                 icone: AppIcons.info,
@@ -331,6 +351,7 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
               ),
               const SizedBox(height: AppDimensions.spaceXXLarge),
 
+              // [Ação] Botão de Confirmação para Salvar Alterações
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryAlternative,
@@ -349,6 +370,7 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
     );
   }
 
+  /// [Componente Auxiliar] Botão para seleção interativa do turno (Manhã/Tarde).
   Widget _buildTurnoBtn(String texto, IconData icone, Color cor, Turno turno) {
     final isSelected = _horarioSelecionado == turno;
     return Expanded(
@@ -393,6 +415,7 @@ class _EditarOrcamentoState extends State<EditarOrcamento> {
     );
   }
 
+  /// [Componente Auxiliar] Campo seletor de data customizado com suporte a acionamento de limpeza.
   Widget _buildDataBtn(
     String label,
     String valor,

@@ -6,6 +6,10 @@ import '../../../core/errors/errors.dart';
 import 'criar_conta.dart';
 import '../HomePage/home_page.dart';
 
+/// [Objetivo] Tela de autenticação e acesso de usuários ao sistema.
+///
+/// [Fluxo] Valida as credenciais localmente, executa a consulta via RPC no Supabase,
+/// armazena os dados da sessão de forma criptografada e redireciona para a home.
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -14,41 +18,53 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // --- CONTROLADORES DE CAMPO ---
-  final _nomeController = TextEditingController();
-  final _senhaController = TextEditingController();
+  // [Chave] Controla a validação do formulário de credenciais.
   final _formKey = GlobalKey<FormState>();
+
+  // [Serviços] Gerencia o armazenamento seguro de tokens e dados de sessão.
   final _storage = const FlutterSecureStorage();
 
-  // --- ESTADOS DE CONTROLE DA INTERFACE ---
+  // [Controladores] Gerenciam os inputs de texto.
+  late final TextEditingController _nomeController;
+  late final TextEditingController _senhaController;
+
+  // [Estados Reativos] Controlam loading e visibilidade da senha.
   bool _isLoading = false;
   bool _mostrarSenha = false;
 
   @override
+  void initState() {
+    super.initState();
+    _nomeController = TextEditingController();
+    _senhaController = TextEditingController();
+  }
+
+  @override
   void dispose() {
+    // [Descarte] Libera memória dos controladores ao destruir a tela.
     _nomeController.dispose();
     _senhaController.dispose();
     super.dispose();
   }
 
-  /// [Uso]: Autentica o usuário no Supabase através da função RPC.
-  /// Valida o formulário, consulta o banco por nome/senha e checa a permissão de acesso.
+  /// [Objetivo] Autentica o usuário via função RPC no Supabase.
+  /// [Fluxo] Valida inputs, consulta o banco, verifica permissões de administrador/liberação e persiste a sessão.
   Future<void> _fazerLogin() async {
     if (!_formKey.currentState!.validate()) return;
-    FocusScope.of(context).unfocus();
+
     setState(() => _isLoading = true);
+    FocusScope.of(context).unfocus(); // Oculta o teclado.
 
     try {
       final nome = _nomeController.text.trim();
       final senha = _senhaController.text;
 
-      // 1. Consulta RPC no banco de dados
+      // [RPC] Consulta as credenciais diretamente na stored procedure do banco.
       final List<dynamic> response = await Supabase.instance.client.rpc(
         'login_usuario',
         params: {'p_nome': nome, 'p_senha': senha},
       );
 
-      // Verifica se a tela ainda existe antes de continuar
       if (!mounted) return;
 
       if (response.isEmpty) {
@@ -57,48 +73,56 @@ class _LoginPageState extends State<LoginPage> {
 
       final dadosUsuario = response.first as Map<String, dynamic>;
 
+      // [Validação de Acesso] Checa se o perfil já foi aprovado por um gestor.
       if (dadosUsuario['autenticado'] == false) {
         throw 'Sua conta ainda não foi liberada por um administrador.';
       }
 
-      // 2. Grava os dados da sessão localmente de forma criptografada
-      // Garante que o ID e o telefone sejam salvos para a busca de sessão.
-      await _storage.write(
-        key: 'usuario_id',
-        value: dadosUsuario['id']?.toString(),
-      );
-      await _storage.write(
-        key: 'telefone',
-        value: dadosUsuario['telefone']?.toString(),
-      );
-      await _storage.write(key: 'usuario_logado', value: dadosUsuario['nome']);
-      await _storage.write(
-        key: 'is_admin',
-        value: dadosUsuario['is_admin'].toString(),
-      );
+      // [Sessão] Grava as credenciais e metadados localmente de forma criptografada.
+      await Future.wait([
+        _storage.write(
+          key: 'usuario_id',
+          value: dadosUsuario['id']?.toString(),
+        ),
+        _storage.write(
+          key: 'telefone',
+          value: dadosUsuario['telefone']?.toString(),
+        ),
+        _storage.write(
+          key: 'usuario_logado',
+          value: dadosUsuario['nome']?.toString(),
+        ),
+        _storage.write(
+          key: 'is_admin',
+          value: (dadosUsuario['is_admin'] ?? false).toString(),
+        ),
+      ]);
 
-      // Garante que o contexto ainda está ativo antes de executar a navegação.
       if (!mounted) return;
 
-      // 3. Limpa a pilha de telas e abre a aplicação principal
+      // [Navegação] Limpa a pilha de roteamento e redireciona para a aplicação principal.
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => HomePage(
-            nomeUsuario: dadosUsuario['nome'],
-            isAdmin: dadosUsuario['is_admin'],
+            nomeUsuario: dadosUsuario['nome'] ?? '',
+            isAdmin: dadosUsuario['is_admin'] ?? false,
           ),
         ),
         (route) => false,
       );
     } catch (e) {
+      if (!mounted) return;
+
+      // [Tratamento de Erro] Mapeia a exceção e exibe feedback flutuante na UI.
       final mensagemErro = ErrorHandler.mapearErro(e);
       _mostrarErro(mensagemErro);
     } finally {
+      // [Reset] Encerra o estado de carregamento.
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  /// [Uso]: Exibe mensagens de feedback e alertas de erro em uma barra flutuante (SnackBar).
+  /// [Objetivo] Exibe mensagens de feedback e alertas de erro em uma barra flutuante.
   void _mostrarErro(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -115,6 +139,7 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
+        // [Layout] Garante responsividade e ancoragem do rodapé sem overflow em telas menores.
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
@@ -130,7 +155,7 @@ class _LoginPageState extends State<LoginPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // --- BOTÃO DE VOLTAR ---
+                          // [Navegação] Retorno para a tela anterior.
                           Align(
                             alignment: Alignment.centerLeft,
                             child: IconButton(
@@ -144,29 +169,28 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
                           ),
-                          // --- CABEÇALHO DA TELA ---
+
+                          // [UI] Cabeçalho visual da tela de acesso.
                           const Icon(
                             AppIcons.segurancaSection,
                             size: 84,
                             color: AppColors.primary,
                           ),
                           const SizedBox(height: AppDimensions.spaceXLarge),
-
-                          Text(
+                          const Text(
                             "Acesso ao Sistema",
                             textAlign: TextAlign.center,
                             style: AppTextStyles.titleLarge,
                           ),
                           const SizedBox(height: AppDimensions.spaceSmall),
-
-                          Text(
+                          const Text(
                             "Digite suas credenciais para continuar",
                             textAlign: TextAlign.center,
                             style: AppTextStyles.bodyMediumSecondary,
                           ),
                           const SizedBox(height: AppDimensions.spaceXXXLarge),
 
-                          // --- FORMULÁRIO DE ENTRADA ---
+                          // [Seção] Formulário de entrada de credenciais.
                           AppCardContainer(
                             titulo: 'CREDENCIAS',
                             icone: AppIcons.segurancaSection,
@@ -191,6 +215,7 @@ class _LoginPageState extends State<LoginPage> {
                                 icon: AppIcons.senha,
                                 obscureText: !_mostrarSenha,
                                 textInputAction: TextInputAction.done,
+                                // [UX] Dispara o login pela tecla 'Done' do teclado de forma fluida.
                                 onFieldSubmitted: (_) => _fazerLogin(),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -214,9 +239,10 @@ class _LoginPageState extends State<LoginPage> {
                             ],
                           ),
 
+                          // [Espaçador] Empurra os blocos de ação para o rodapé da tela.
                           const Spacer(),
 
-                          // --- BOTÃO DE ACESSO ---
+                          // [Ação Principal] Botão de submissão do login com indicador de progresso.
                           ElevatedButton(
                             onPressed: _isLoading ? null : _fazerLogin,
                             child: _isLoading
@@ -233,7 +259,7 @@ class _LoginPageState extends State<LoginPage> {
 
                           const SizedBox(height: AppDimensions.spaceMedium),
 
-                          // --- RODAPÉ DE NAVEGAÇÃO ---
+                          // [Navegação] Rota alternativa para novos usuários.
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [

@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 import '../../Core/Design/design_system.dart';
 import '../../Core/Errors/errors.dart';
 import '../../Core/Utils/formatters.dart';
@@ -7,6 +9,11 @@ import '../../Features/Modelos/cliente_model.dart';
 import '../../Features/Repositorios/cliente_repository.dart';
 import '../Utils/Cliente/tipo_pessoa_selector.dart';
 
+/// [Objetivo] Tela de edição dos dados cadastrais e preferências de um cliente existente.
+///
+/// [Fluxo] Preenche os campos do formulário com os dados atuais do cliente,
+/// valida as informações inseridas (endereço, contato, CPF/CNPJ e observações),
+/// persiste as alterações no banco via repositório e retorna a instância atualizada do [Cliente].
 class EditarClientePage extends StatefulWidget {
   final Cliente cliente;
 
@@ -18,10 +25,11 @@ class EditarClientePage extends StatefulWidget {
 
 class _EditarClientePageState extends State<EditarClientePage> {
   final _formKey = GlobalKey<FormState>();
-  final _clienteRepository = ClienteRepository();
-  bool _isLoading = false;
 
-  // Controladores
+  // [Repositório] Instância responsável pela comunicação com a camada de dados do cliente.
+  final _clienteRepository = ClienteRepository();
+
+  // Controladores do Formulário
   late final TextEditingController _nomeController;
   late final TextEditingController _ruaController;
   late final TextEditingController _complementoController;
@@ -32,7 +40,8 @@ class _EditarClientePageState extends State<EditarClientePage> {
   late final TextEditingController _cnpjController;
   late final TextEditingController _observacaoController;
 
-  // Estado
+  // [Estado Local] Controle do estado de carregamento, seleção de pessoa e flag de alerta.
+  bool _isLoading = false;
   late bool _isPessoaFisica;
   late bool _isProblematico;
 
@@ -41,7 +50,7 @@ class _EditarClientePageState extends State<EditarClientePage> {
     super.initState();
     final cliente = widget.cliente;
 
-    // Inicializa os controladores com os dados existentes
+    // Inicialização dos controladores com máscaras e formatação apropriada
     _nomeController = TextEditingController(text: cliente.nome);
     _ruaController = TextEditingController(text: cliente.rua);
     _complementoController = TextEditingController(
@@ -64,7 +73,7 @@ class _EditarClientePageState extends State<EditarClientePage> {
       text: cliente.observacao ?? '',
     );
 
-    // Define o estado inicial
+    // Definição do estado inicial
     _isProblematico = cliente.clienteProblematico;
     _isPessoaFisica = (cliente.cnpj == null || cliente.cnpj!.isEmpty);
   }
@@ -83,8 +92,10 @@ class _EditarClientePageState extends State<EditarClientePage> {
     super.dispose();
   }
 
+  /// [Objetivo] Processa e valida os dados do formulário, disparando a atualização no banco.
   Future<void> _salvarAlteracoes() async {
     if (!_formKey.currentState!.validate()) return;
+    if (widget.cliente.id == null) return;
 
     setState(() => _isLoading = true);
 
@@ -115,38 +126,40 @@ class _EditarClientePageState extends State<EditarClientePage> {
         dadosAtualizados,
       );
 
-      if (mounted) {
-        AppFeedback.show(
-          context,
-          'Cliente atualizado com sucesso!',
-          type: FeedbackType.success,
-        );
+      if (!mounted) return;
 
-        final clienteAtualizado = widget.cliente.copyWith(
-          nome: dadosAtualizados['nome'] as String,
-          rua: dadosAtualizados['rua'] as String,
-          numero: dadosAtualizados['numero'] as String,
-          complemento: dadosAtualizados['complemento'] as String?,
-          bairro: dadosAtualizados['bairro'] as String,
-          telefone: dadosAtualizados['telefone'] as String,
-          cpf: dadosAtualizados['cpf'] as String?,
-          cnpj: dadosAtualizados['cnpj'] as String?,
-          observacao: dadosAtualizados['observacao'] as String?,
-          clienteProblematico: dadosAtualizados['cliente_problematico'] as bool,
-        );
+      AppFeedback.show(
+        context,
+        'Cliente atualizado com sucesso!',
+        type: FeedbackType.success,
+      );
 
-        Navigator.pop(context, clienteAtualizado);
-      }
+      final clienteAtualizado = widget.cliente.copyWith(
+        nome: dadosAtualizados['nome'] as String,
+        rua: dadosAtualizados['rua'] as String,
+        numero: dadosAtualizados['numero'] as String,
+        complemento: dadosAtualizados['complemento'] as String?,
+        bairro: dadosAtualizados['bairro'] as String,
+        telefone: dadosAtualizados['telefone'] as String,
+        cpf: dadosAtualizados['cpf'] as String?,
+        cnpj: dadosAtualizados['cnpj'] as String?,
+        observacao: dadosAtualizados['observacao'] as String?,
+        clienteProblematico: dadosAtualizados['cliente_problematico'] as bool,
+      );
+
+      // [Navegação] Retorna para a tela de detalhes enviando a instância atualizada do cliente.
+      Navigator.pop(context, clienteAtualizado);
     } catch (e) {
-      if (mounted) {
-        AppFeedback.show(
-          context,
-          ErrorHandler.mapearErro(e),
-          type: FeedbackType.error,
-        );
-      }
+      if (!mounted) return;
+      AppFeedback.show(
+        context,
+        ErrorHandler.mapearErro(e),
+        type: FeedbackType.error,
+      );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -154,6 +167,8 @@ class _EditarClientePageState extends State<EditarClientePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+
+      // [Barra de Título] AppBar padronizada para telas secundárias/edição.
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(40.0),
         child: AppBar(
@@ -162,6 +177,8 @@ class _EditarClientePageState extends State<EditarClientePage> {
           centerTitle: true,
         ),
       ),
+
+      // [Corpo] Formulário rolável dividido por cards de seção.
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppDimensions.spaceLarge),
         child: Form(
@@ -169,6 +186,7 @@ class _EditarClientePageState extends State<EditarClientePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // [UI] Seção de Dados Cadastrais e Endereço
               AppCardContainer(
                 titulo: 'DADOS CADASTRAIS',
                 icone: AppIcons.dadosPessoaisSection,
@@ -177,7 +195,9 @@ class _EditarClientePageState extends State<EditarClientePage> {
                     controller: _nomeController,
                     label: 'Nome Completo',
                     icon: AppIcons.nome,
-                    validator: (v) => v!.isEmpty ? 'Campo obrigatório' : null,
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Campo obrigatório'
+                        : null,
                   ),
                   const SizedBox(height: AppDimensions.spaceMedium),
                   AppTextField(
@@ -186,15 +206,18 @@ class _EditarClientePageState extends State<EditarClientePage> {
                     icon: AppIcons.telefone,
                     keyboardType: TextInputType.phone,
                     inputFormatters: [AppFormatters.telefone],
-                    validator: (v) =>
-                        v!.length < 15 ? 'Telefone incompleto' : null,
+                    validator: (v) => (v == null || v.length < 15)
+                        ? 'Telefone incompleto'
+                        : null,
                   ),
                   const SizedBox(height: AppDimensions.spaceMedium),
                   AppTextField(
                     controller: _ruaController,
                     label: 'Rua',
                     icon: AppIcons.rua,
-                    validator: (v) => v!.isEmpty ? 'Campo obrigatório' : null,
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Campo obrigatório'
+                        : null,
                   ),
                   const SizedBox(height: AppDimensions.spaceMedium),
                   Row(
@@ -205,7 +228,8 @@ class _EditarClientePageState extends State<EditarClientePage> {
                           label: 'Nº',
                           icon: AppIcons.numeroCasa,
                           keyboardType: TextInputType.number,
-                          validator: (v) => v!.isEmpty ? 'Req.' : null,
+                          validator: (v) =>
+                              (v == null || v.trim().isEmpty) ? 'Req.' : null,
                         ),
                       ),
                       const SizedBox(width: AppDimensions.spaceMedium),
@@ -223,11 +247,16 @@ class _EditarClientePageState extends State<EditarClientePage> {
                     controller: _bairroController,
                     label: 'Bairro',
                     icon: AppIcons.bairro,
-                    validator: (v) => v!.isEmpty ? 'Campo obrigatório' : null,
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Campo obrigatório'
+                        : null,
                   ),
                 ],
               ),
+
               const SizedBox(height: AppDimensions.spaceLarge),
+
+              // [UI] Seção de Documentação (PF / PJ)
               AppCardContainer(
                 titulo: 'DOCUMENTAÇÃO (OPCIONAL)',
                 icone: AppIcons.documento,
@@ -276,7 +305,10 @@ class _EditarClientePageState extends State<EditarClientePage> {
                   ),
                 ],
               ),
+
               const SizedBox(height: AppDimensions.spaceLarge),
+
+              // [UI] Seção de Status e Observações Internas
               AppCardContainer(
                 titulo: 'STATUS E OBSERVAÇÕES',
                 icone: AppIcons.info,
@@ -307,7 +339,10 @@ class _EditarClientePageState extends State<EditarClientePage> {
                   ),
                 ],
               ),
+
               const SizedBox(height: AppDimensions.spaceXXLarge),
+
+              // [UI] Botão de Confirmação das Alterações
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryAlternative,

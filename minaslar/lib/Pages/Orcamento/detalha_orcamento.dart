@@ -8,6 +8,12 @@ import '../../Features/Repositorios/orcamento_repository.dart';
 import '../Cliente/detalha_cliente.dart';
 import 'edita_orcamento.dart';
 
+/// [Visão Geral]
+/// Tela de detalhamento completo e gerenciamento de um orçamento individual.
+///
+/// [Uso]
+/// Exibir informações detalhadas, atualizar status de conclusão, editar ou excluir
+/// um orçamento. Aceita dados no parâmetro [orcamentoInicial] como modelo [Orcamento] ou [Map].
 class DetalhesOrcamento extends StatefulWidget {
   final dynamic orcamentoInicial;
   final bool isAdmin;
@@ -23,6 +29,7 @@ class DetalhesOrcamento extends StatefulWidget {
 }
 
 class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
+  // [Gerenciamento de Estado e Repositório]
   final _repository = OrcamentoRepository();
   late Orcamento _orcamento;
   bool _isLoading = false;
@@ -31,7 +38,7 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
   @override
   void initState() {
     super.initState();
-    // Suporta tanto o objeto Orcamento quanto o Map<String, dynamic> vindo do Supabase (ex: AgendaPage)
+    // [Normalização de Dados] Aceita tanto instância da model quanto Map vindo de APIs (ex: Supabase)
     if (widget.orcamentoInicial is Orcamento) {
       _orcamento = widget.orcamentoInicial as Orcamento;
     } else if (widget.orcamentoInicial is Map) {
@@ -46,10 +53,10 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
     _carregarDetalhes();
   }
 
+  /// [Ação] Rebusca os dados atualizados do orçamento diretamente do repositório.
   Future<void> _carregarDetalhes() async {
-    if (_orcamento.id == null) {
-      return;
-    }
+    if (_orcamento.id == null) return;
+
     setState(() {
       _isLoading = true;
       _error = null;
@@ -71,6 +78,7 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
     }
   }
 
+  /// [Ação] Alterna o status de conclusão/entrega do serviço e persiste a mudança.
   Future<void> _alterarStatusEntrega() async {
     setState(() => _isLoading = true);
     try {
@@ -102,6 +110,7 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
     }
   }
 
+  /// [Ação] Exibe modal de confirmação e realiza a exclusão definitiva do registro.
   Future<void> _excluirOrcamento() async {
     final confirmar = await showDialog<bool>(
       context: context,
@@ -132,9 +141,7 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
       ),
     );
 
-    if (confirmar != true || _orcamento.id == null) {
-      return;
-    }
+    if (confirmar != true || _orcamento.id == null) return;
 
     setState(() => _isLoading = true);
     try {
@@ -159,6 +166,7 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
     }
   }
 
+  /// [Navegação] Abre o formulário de edição e atualiza a tela caso ocorram alterações.
   Future<void> _editarOrcamento() async {
     final editado = await Navigator.push(
       context,
@@ -171,6 +179,8 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
     }
   }
 
+  /// [Regra de Negócio]
+  /// Calcula e retorna o status de maior prioridade para exibição visual (Rótulo, Cor e Ícone).
   ({String label, Color color, IconData icon}) _obterStatusPrincipal() {
     if (_orcamento.entregue) {
       return (
@@ -206,6 +216,8 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
   @override
   Widget build(BuildContext context) {
     final status = _obterStatusPrincipal();
+
+    // [Formatação de Dados para Exibição]
     final dataEntradaF = DateFormat('dd/MM/yyyy').format(_orcamento.dataPega);
     final dataEntregaF = _orcamento.dataEntrega != null
         ? DateFormat('dd/MM/yyyy').format(_orcamento.dataEntrega!)
@@ -219,6 +231,8 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+
+      // [Barra de Ações Superior]
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(40.0),
         child: AppBar(
@@ -234,7 +248,6 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
               tooltip: "Editar",
             ),
             IconButton(
-              // Corrigido para AppIcons.excluir (resolve o erro const_with_non_constant_argument e undefined_getter)
               icon: const Icon(AppIcons.excluir, color: AppColors.textPrimary),
               onPressed: _isLoading ? null : _excluirOrcamento,
               tooltip: "Excluir",
@@ -263,6 +276,7 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // [Seção] Rótulo de Status Visual e Ação Rápida de Conclusão
                     Row(
                       children: [
                         Expanded(
@@ -321,6 +335,7 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
                     ),
                     const SizedBox(height: AppDimensions.spaceLarge),
 
+                    // [Seção] Detalhes e Descrição do Serviço
                     Container(
                       padding: const EdgeInsets.all(AppDimensions.spaceXLarge),
                       decoration: BoxDecoration(
@@ -385,6 +400,7 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
                     ),
                     const SizedBox(height: AppDimensions.spaceLarge),
 
+                    // [Seção] Prazos de Agendamento e Turno
                     Row(
                       children: [
                         Expanded(
@@ -423,6 +439,7 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
                     ),
                     const SizedBox(height: AppDimensions.spaceLarge),
 
+                    // [Seção] Resumo Financeiro
                     Container(
                       padding: const EdgeInsets.symmetric(
                         vertical: AppDimensions.spaceLarge,
@@ -488,6 +505,7 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
                       ),
                     const SizedBox(height: AppDimensions.spaceLarge),
 
+                    // [Seção] Informações e Navegação para o Cliente Vinculado
                     if (_orcamento.cliente != null) ...[
                       Material(
                         color: Colors.transparent,
@@ -558,6 +576,7 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
     );
   }
 
+  /// [Componente Auxiliar] Card compacto para exibição individual de datas ou turnos.
   Widget _buildTile(String label, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(AppDimensions.spaceMedium),

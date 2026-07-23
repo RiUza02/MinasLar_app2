@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import '../../Core/Design/design_system.dart';
 import '../../Core/Errors/errors.dart';
 import '../../Core/Utils/formatters.dart';
@@ -11,6 +12,11 @@ import '../Orcamento/cria_orcamento.dart';
 import '../../Features/Modelos/cliente_model.dart';
 import '../../Features/Repositorios/cliente_repository.dart';
 
+/// [Objetivo] Tela responsável pelo cadastro e importação de novos clientes.
+///
+/// [Fluxo] Permite a inserção manual de dados ou importação via parser de texto.
+/// Realiza validações de duplicidade no banco antes da persistência e redireciona
+/// para a criação de orçamento caso um cliente similar já exista.
 class AdicionarClientePage extends StatefulWidget {
   const AdicionarClientePage({super.key});
 
@@ -19,31 +25,49 @@ class AdicionarClientePage extends StatefulWidget {
 }
 
 class _AdicionarClientePageState extends State<AdicionarClientePage> {
+  // [Chave] Controla a validação global do formulário de cliente.
   final _formKey = GlobalKey<FormState>();
+
+  // [Repositório] Camada de acesso a dados e consultas no banco.
   final _clienteRepository = ClienteRepository();
+
+  // [Controladores] Gerenciam os campos de entrada de dados.
+  late final TextEditingController _nomeController;
+  late final TextEditingController _ruaController;
+  late final TextEditingController _complementoController;
+  late final TextEditingController _numeroController;
+  late final TextEditingController _bairroController;
+  late final TextEditingController _telefoneController;
+  late final TextEditingController _cpfController;
+  late final TextEditingController _cnpjController;
+  late final TextEditingController _observacaoController;
+
+  // [Estados Reativos] Controlam carregamento e lógica de apresentação (PF/PJ/Problemático).
   bool _isLoading = false;
-
-  // Controladores
-  final _nomeController = TextEditingController();
-  final _ruaController = TextEditingController();
-  final _complementoController = TextEditingController();
-  final _numeroController = TextEditingController();
-  final _bairroController = TextEditingController();
-  final _telefoneController = TextEditingController();
-  final _cpfController = TextEditingController();
-  final _cnpjController = TextEditingController();
-  final _observacaoController = TextEditingController();
-
-  // Estado
   bool _isPessoaFisica = true;
   bool _isProblematico = false;
 
   @override
+  void initState() {
+    super.initState();
+    _nomeController = TextEditingController();
+    _ruaController = TextEditingController();
+    _complementoController = TextEditingController();
+    _numeroController = TextEditingController();
+    _bairroController = TextEditingController();
+    _telefoneController = TextEditingController();
+    _cpfController = TextEditingController();
+    _cnpjController = TextEditingController();
+    _observacaoController = TextEditingController();
+  }
+
+  @override
   void dispose() {
+    // [Descarte] Libera memória dos controladores ao fechar a tela.
     _nomeController.dispose();
     _ruaController.dispose();
-    _numeroController.dispose();
     _complementoController.dispose();
+    _numeroController.dispose();
     _bairroController.dispose();
     _telefoneController.dispose();
     _cpfController.dispose();
@@ -52,41 +76,54 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
     super.dispose();
   }
 
-  /// Inicia o fluxo de salvamento, validando o formulário e checando duplicidade.
+  /// [Objetivo] Inicia o fluxo de salvamento, validando o formulário e checando duplicidade.
+  /// [Fluxo] Executa validação de UI, consulta o banco por clientes similares e decide entre criar ou alertar.
   Future<void> _salvarCliente() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
+
     setState(() => _isLoading = true);
+    FocusScope.of(context).unfocus(); // Oculta o teclado operacional.
 
-    final clienteEncontrado = await _clienteRepository.verificarDuplicado(
-      nome: _nomeController.text,
-      rua: _ruaController.text,
-      numero: _numeroController.text,
-    );
+    try {
+      // [Repositório] Consulta se há registro equivalente por Nome, Rua e Número.
+      final clienteEncontrado = await _clienteRepository.verificarDuplicado(
+        nome: _nomeController.text.trim(),
+        rua: _ruaController.text.trim(),
+        numero: _numeroController.text.trim(),
+      );
 
-    if (mounted) {
+      if (!mounted) return;
+
       if (clienteEncontrado != null) {
         setState(() => _isLoading = false);
         _handleClienteDuplicado(clienteEncontrado);
       } else {
         await _criarNovoCliente();
       }
+    } catch (e) {
+      if (!mounted) return;
+      AppFeedback.show(
+        context,
+        ErrorHandler.mapearErro(e),
+        type: FeedbackType.error,
+      );
+      setState(() => _isLoading = false);
     }
   }
 
-  /// Verifica no banco se já existe um cliente com dados parecidos.
+  /// [Objetivo] Constrói o modelo de dados e o persiste definitivamente no banco de dados.
   Future<void> _criarNovoCliente() async {
     if (mounted) setState(() => _isLoading = true);
     try {
+      // [Modelo] Normaliza textos (TitleCase, trim, remoção de máscaras) para padronização no banco.
       final novoCliente = Cliente(
-        nome: _nomeController.text.toTitleCase(),
-        rua: _ruaController.text.toTitleCase(),
+        nome: _nomeController.text.trim().toTitleCase(),
+        rua: _ruaController.text.trim().toTitleCase(),
         numero: _numeroController.text.trim(),
         complemento: _complementoController.text.trim().isEmpty
             ? null
-            : _complementoController.text.toTitleCase(),
-        bairro: _bairroController.text.toTitleCase(),
+            : _complementoController.text.trim().toTitleCase(),
+        bairro: _bairroController.text.trim().toTitleCase(),
         telefone: AppFormatters.telefone.unmaskText(_telefoneController.text),
         cpf: _isPessoaFisica && _cpfController.text.isNotEmpty
             ? AppFormatters.cpf.unmaskText(_cpfController.text)
@@ -100,42 +137,44 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
         clienteProblematico: _isProblematico,
       );
 
+      // [Repositório] Persiste o registro.
       await _clienteRepository.salvarCliente(novoCliente);
 
-      if (mounted) {
-        AppFeedback.show(
-          context,
-          'Cliente adicionado com sucesso!',
-          type: FeedbackType.success,
-        );
-        Navigator.pop(context, true);
-      }
+      if (!mounted) return;
+
+      AppFeedback.show(
+        context,
+        'Cliente adicionado com sucesso!',
+        type: FeedbackType.success,
+      );
+
+      // [Navegação] Retorna 'true' para sinalizar recarga de listas na tela anterior.
+      Navigator.pop(context, true);
     } catch (e) {
-      if (mounted) {
-        AppFeedback.show(
-          context,
-          ErrorHandler.mapearErro(e),
-          type: FeedbackType.error,
-        );
-      }
+      if (!mounted) return;
+      AppFeedback.show(
+        context,
+        ErrorHandler.mapearErro(e),
+        type: FeedbackType.error,
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  /// Abre um modal para importação de dados via texto.
+  /// [Objetivo] Abre um modal interativo para colagem e importação em massa de dados via texto.
   Future<void> _mostrarModalImportacao() async {
     final String? textoImportado = await showDialog<String>(
       context: context,
       builder: (context) => const ClienteImportDialog(),
     );
 
-    if (textoImportado != null) {
+    if (textoImportado != null && textoImportado.isNotEmpty) {
       _processarTextoImportado(textoImportado);
     }
   }
 
-  /// Processa o texto colado e preenche os campos do formulário.
+  /// [Objetivo] Processa o texto bruto com o parser e preenche os controladores automaticamente.
   void _processarTextoImportado(String texto) {
     try {
       final parser = ClienteImportParser();
@@ -163,7 +202,8 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
     }
   }
 
-  /// Mostra um diálogo de confirmação quando um cliente parecido é encontrado.
+  /// [Objetivo] Gerencia a decisão do usuário ao se deparar com um cliente potencialmente duplicado.
+  /// [Fluxo] Oferece opções para criar o cadastro ignorando o aviso, ou ir direto para o orçamento do cliente existente.
   Future<void> _handleClienteDuplicado(Cliente clienteEncontrado) async {
     final action = await showDialog<ClienteDuplicadoAction>(
       context: context,
@@ -177,14 +217,13 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
         await _criarNovoCliente();
         break;
       case ClienteDuplicadoAction.criarOrcamento:
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => AdicionarOrcamento(cliente: clienteEncontrado),
-            ),
-          );
-        }
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AdicionarOrcamento(cliente: clienteEncontrado),
+          ),
+        );
         break;
       default:
         break;
@@ -210,6 +249,7 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // [Ação Secundária] Botão de importação inteligente por texto.
               OutlinedButton.icon(
                 onPressed: _mostrarModalImportacao,
                 icon: const Icon(AppIcons.importar),
@@ -223,6 +263,8 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
                 ),
               ),
               const SizedBox(height: AppDimensions.spaceXLarge),
+
+              // [Seção 1] Dados Cadastrais e Endereço.
               AppCardContainer(
                 titulo: 'DADOS CADASTRAIS',
                 icone: AppIcons.dadosPessoaisSection,
@@ -231,7 +273,10 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
                     controller: _nomeController,
                     label: 'Nome Completo',
                     icon: AppIcons.nome,
-                    validator: (v) => v!.isEmpty ? 'Campo obrigatório' : null,
+                    textInputAction: TextInputAction.next,
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Campo obrigatório'
+                        : null,
                   ),
                   const SizedBox(height: AppDimensions.spaceMedium),
                   AppTextField(
@@ -239,16 +284,24 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
                     label: 'Telefone',
                     icon: AppIcons.telefone,
                     keyboardType: TextInputType.phone,
+                    textInputAction: TextInputAction.next,
                     inputFormatters: [AppFormatters.telefone],
-                    validator: (v) =>
-                        v!.length < 15 ? 'Telefone incompleto' : null,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty)
+                        return 'Campo obrigatório';
+                      if (v.length < 15) return 'Telefone incompleto';
+                      return null;
+                    },
                   ),
                   const SizedBox(height: AppDimensions.spaceMedium),
                   AppTextField(
                     controller: _ruaController,
                     label: 'Rua',
                     icon: AppIcons.rua,
-                    validator: (v) => v!.isEmpty ? 'Campo obrigatório' : null,
+                    textInputAction: TextInputAction.next,
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Campo obrigatório'
+                        : null,
                   ),
                   const SizedBox(height: AppDimensions.spaceMedium),
                   Row(
@@ -259,7 +312,9 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
                           label: 'Nº',
                           icon: AppIcons.numeroCasa,
                           keyboardType: TextInputType.number,
-                          validator: (v) => v!.isEmpty ? 'Req.' : null,
+                          textInputAction: TextInputAction.next,
+                          validator: (v) =>
+                              (v == null || v.trim().isEmpty) ? 'Req.' : null,
                         ),
                       ),
                       const SizedBox(width: AppDimensions.spaceMedium),
@@ -268,6 +323,7 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
                           controller: _complementoController,
                           label: 'Apto / Comp.',
                           icon: AppIcons.complemento,
+                          textInputAction: TextInputAction.next,
                         ),
                       ),
                     ],
@@ -277,11 +333,16 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
                     controller: _bairroController,
                     label: 'Bairro',
                     icon: AppIcons.bairro,
-                    validator: (v) => v!.isEmpty ? 'Campo obrigatório' : null,
+                    textInputAction: TextInputAction.done,
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Campo obrigatório'
+                        : null,
                   ),
                 ],
               ),
               const SizedBox(height: AppDimensions.spaceLarge),
+
+              // [Seção 2] Documentação (PF / PJ).
               AppCardContainer(
                 titulo: 'DOCUMENTAÇÃO (OPCIONAL)',
                 icone: AppIcons.documento,
@@ -322,6 +383,8 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
                 ],
               ),
               const SizedBox(height: AppDimensions.spaceLarge),
+
+              // [Seção 3] Status e Observações.
               AppCardContainer(
                 titulo: 'STATUS E OBSERVAÇÕES',
                 icone: AppIcons.info,
@@ -353,14 +416,21 @@ class _AdicionarClientePageState extends State<AdicionarClientePage> {
                 ],
               ),
               const SizedBox(height: AppDimensions.spaceXXLarge),
+
+              // [Ação Principal] Botão de submissão do formulário com indicador visual.
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryAlternative,
                 ),
                 onPressed: _isLoading ? null : _salvarCliente,
                 child: _isLoading
-                    ? const CircularProgressIndicator(
-                        color: AppColors.textPrimary,
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: AppColors.textPrimary,
+                        ),
                       )
                     : const Text("CADASTRAR CLIENTE"),
               ),

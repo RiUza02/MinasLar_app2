@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
-import '../servicos/IA.dart'; // Importe o arquivo que criamos acima!
+import 'IA_functions.dart';
 
+/// [Objetivo] Componente de interface para o chat interativo com o assistente virtual (IA).
+///
+/// [Fluxo]
+/// 1. Renderiza a área de mensagens e o campo de texto respeitando a paleta escura do app.
+/// 2. Ajusta a cor de destaque da interface dinamicamente conforme a permissão do usuário [isAdmin].
+/// 3. Captura o input, bloqueia novas ações durante o processamento [isLoading] e exibe a resposta da IA.
 class TelaAssistente extends StatefulWidget {
   final bool isAdmin;
 
@@ -11,9 +17,13 @@ class TelaAssistente extends StatefulWidget {
 }
 
 class _TelaAssistenteState extends State<TelaAssistente> {
+  // [Controladores] Gerencia o ciclo de vida do texto inserido no input.
   final TextEditingController _controller = TextEditingController();
-  final IaService _iaService = IaService();
 
+  // [Dependência] Instância do serviço de integração com a API de Inteligência Artificial.
+  final IA_functions _iaService = IA_functions();
+
+  // [Estado Interno] Variáveis reativas que controlam o texto renderizado e o status de loading.
   String _respostaIA = "Olá! Como posso ajudar você hoje?";
   bool _carregando = false;
   late Color _corPrincipal;
@@ -21,10 +31,24 @@ class _TelaAssistenteState extends State<TelaAssistente> {
   @override
   void initState() {
     super.initState();
-    // Define a cor principal com base no status de admin
+    // [Configuração Visual] Define a cor do botão de envio com base na flag de privilégio.
     _corPrincipal = widget.isAdmin ? Colors.red[900]! : Colors.blue[900]!;
   }
 
+  @override
+  void dispose() {
+    // [Descarte de Memória] Libera o recurso do controller para evitar memory leaks.
+    _controller.dispose();
+    super.dispose();
+  }
+
+  /// [Objetivo] Dispara o fluxo de requisição para a IA com a pergunta atual do input.
+  ///
+  /// [Comportamento]
+  /// - Interrompe a execução caso o campo esteja vazio.
+  /// - Atualiza a UI para o estado de carregamento (_carregando = true).
+  /// - Envia a requisição de forma assíncrona para o serviço de IA.
+  /// - Retorna o estado normal renderizando o texto de resposta na tela.
   void _enviarPergunta() async {
     if (_controller.text.isEmpty) return;
 
@@ -33,39 +57,38 @@ class _TelaAssistenteState extends State<TelaAssistente> {
       _respostaIA = "Pensando...";
     });
 
-    // Chama o serviço de IA passando a pergunta e o status de admin do widget
+    // [Integração] Invoca o processamento remoto da pergunta submetida pelo usuário.
     final resposta = await _iaService.perguntarParaIA(
       perguntaUsuario: _controller.text,
     );
+
+    // [Segurança de Concorrência] Valida se a tela ainda está ativa antes de reconstruir a árvore do widget.
+    if (!mounted) return;
 
     setState(() {
       _respostaIA = resposta;
       _carregando = false;
     });
 
-    _controller.clear(); // Limpa a caixa de texto
+    // [Reset] Limpa o campo para a próxima interação do usuário.
+    _controller.clear();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // Mantendo o padrão do seu app
-      appBar: AppBar(
-        title: const Text('Assistente Virtual'),
-        centerTitle: true,
-        backgroundColor: _corPrincipal, // Cor dinâmica
-      ),
+      backgroundColor: Colors.black,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Caixa onde aparece a resposta
+            // [Área de Leitura] Contêiner expansível e rolável que renderiza as respostas da IA.
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E1E), // Sua cor de card
+                  color: const Color(0xFF1E1E1E),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: SingleChildScrollView(
@@ -78,13 +101,16 @@ class _TelaAssistenteState extends State<TelaAssistente> {
             ),
             const SizedBox(height: 16),
 
-            // Caixa de digitar e botão de enviar
+            // [Área de Entrada] Composição do campo de digitação emparelhado ao botão de submissão.
             Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _controller,
                     style: const TextStyle(color: Colors.white),
+                    // [UX] Aciona o envio nativamente através do botão de ação da infraestrutura do teclado.
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _enviarPergunta(),
                     decoration: InputDecoration(
                       hintText: "Ex: Quais clientes atendi ontem?",
                       hintStyle: TextStyle(color: Colors.grey[400]),
@@ -98,8 +124,10 @@ class _TelaAssistenteState extends State<TelaAssistente> {
                   ),
                 ),
                 const SizedBox(width: 8),
+
+                // [Ação Principal] Botão reativo que alterna visualmente para um indicador de progresso no loading.
                 CircleAvatar(
-                  backgroundColor: _corPrincipal, // Cor dinâmica
+                  backgroundColor: _corPrincipal,
                   radius: 25,
                   child: _carregando
                       ? const CircularProgressIndicator(color: Colors.white)

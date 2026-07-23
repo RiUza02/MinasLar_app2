@@ -1,5 +1,6 @@
 import '../../../core/Design/design_system.dart';
 import '../Settings/settings_page.dart';
+import '../AssistenteIA/chat_IA.dart';
 import 'agenda.dart';
 import 'dashboard.dart';
 import 'lista_cliente.dart';
@@ -9,11 +10,11 @@ import 'overview.dart';
 // ============================================================================
 // REGISTRO DE MIGRAÇÃO DE TELAS (DIRETÓRIO: 'Rascunho' -> Design System)
 // ============================================================================
-// Status atual: 6/7 telas migradas. As demais estão operando via _placeholder.
+// Status atual: 7/7 telas migradas.
 //
 // [X] Dashboard  (Exclusivo Administrador)
 // [X] Agenda     (Administrador / Usuário Comum)
-// [ ] Assistente (Administrador / Usuário Comum)
+// [X] Assistente (Administrador / Usuário Comum)
 // [X] Home       (Adicionado)
 // [X] Clientes   (Adicionado)
 // [X] Orçamentos (Adicionado)
@@ -88,23 +89,26 @@ class _HomePageState extends State<HomePage> {
     }
 
     // **[Comportamento: Mapeamento de Rotas]** Mapeia os itens da barra de navegação para as páginas correspondentes.
-    _pages = _navBarItems.map((item) {
-      switch (item.label) {
-        case 'Dashboard':
-          return const DashboardPage();
-        case 'Home':
-          return OverView(isAdmin: widget.isAdmin);
-        case 'Clientes':
-          // Redireciona a aba Clientes para a página com o status de admin
-          return ListaClientePage(isAdmin: widget.isAdmin);
-        case 'Orçamentos':
-          return ListaOrcamentoPage(isAdmin: widget.isAdmin);
-        case 'Agenda':
-          return AgendaPage(isAdmin: widget.isAdmin);
-        default:
-          return _placeholder(item.label!);
-      }
-    }).toList();
+    _pages = _navBarItems
+        .map((item) {
+          switch (item.label) {
+            case 'Dashboard':
+              return const DashboardPage();
+            case 'Home':
+              return OverView(isAdmin: widget.isAdmin);
+            case 'Clientes':
+              // Redireciona a aba Clientes para a página com o status de admin
+              return ListaClientePage(isAdmin: widget.isAdmin);
+            case 'Orçamentos':
+              return ListaOrcamentoPage(isAdmin: widget.isAdmin);
+            case 'Agenda':
+              return AgendaPage(isAdmin: widget.isAdmin);
+            case 'Assistente':
+              return TelaAssistente(isAdmin: widget.isAdmin);
+          }
+        })
+        .cast<Widget>()
+        .toList();
     _pageController = PageController(initialPage: _selectedIndex);
   }
 
@@ -128,37 +132,6 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _selectedIndex = index;
     });
-  }
-
-  // **[Subcomponente: Interface Temporária]** Gera uma interface visual para telas ainda não implementadas.
-  Widget _placeholder(String label) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.spaceLarge),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              AppIcons.emConstrucao,
-              size: 64,
-              color: AppColors.textDisabled,
-            ),
-            const SizedBox(height: AppDimensions.spaceLarge),
-            Text(
-              'Tela em Construção',
-              style: AppTextStyles.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppDimensions.spaceSmall),
-            Text(
-              'A funcionalidade de "$label" estará disponível em breve.',
-              style: AppTextStyles.bodyMediumSecondary,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override

@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { MANUAL_DO_APP } from "./manual.ts"
 
+/// [TODO] comando apra atualizar a IA: supabase functions deploy assistente-ia --project-ref nnbejmzhldrwaczsntzd
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")
 
 Deno.serve(async (req: Request) => {

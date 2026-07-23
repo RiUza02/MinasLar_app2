@@ -162,14 +162,25 @@ class _OrcamentosDiaState extends State<OrcamentosDia> {
     }
   }
 
-  /// Constrói o botão flutuante (FAB) de rota para perfil administrador.
-  Widget _buildAdminFab() {
+  /// Constrói o botão flutuante (FAB) para calcular a rota.
+  Widget _buildRouteFab() {
     return FloatingActionButton(
       heroTag: "btnRotaDia",
       onPressed: _gerarRota,
-      backgroundColor: AppColors.primary,
+      backgroundColor: _themeColor,
       foregroundColor: AppColors.textPrimary,
       child: const Icon(Icons.map_outlined),
+    );
+  }
+
+  /// Constrói o botão flutuante (FAB) para adicionar um novo orçamento.
+  Widget _buildAddOrcamentoFab() {
+    return FloatingActionButton(
+      heroTag: "btnNovoOrcamentoDia",
+      onPressed: _navegarParaCriarOrcamento,
+      backgroundColor: AppColors.primaryAlternative,
+      foregroundColor: AppColors.textPrimary,
+      child: const Icon(Icons.add),
     );
   }
 
@@ -211,22 +222,14 @@ class _OrcamentosDiaState extends State<OrcamentosDia> {
       ),
 
       // **[Comportamento: Controles Administrativos]** Renderiza condicionalmente as ações flutuantes (Adicionar Orçamento e Gerar Rota) agrupadas em uma coluna. Se não for administrador, omite por completo devolvendo null.
-      floatingActionButton: widget.isAdmin
-          ? Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                FloatingActionButton(
-                  heroTag: "btnNovoOrcamentoDia",
-                  onPressed: _navegarParaCriarOrcamento,
-                  backgroundColor: AppColors.error,
-                  foregroundColor: AppColors.textPrimary,
-                  child: const Icon(Icons.add),
-                ),
-                const SizedBox(height: AppDimensions.spaceMedium),
-                _buildAdminFab(),
-              ],
-            )
-          : null,
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (widget.isAdmin) _buildAddOrcamentoFab(),
+          if (widget.isAdmin) const SizedBox(height: AppDimensions.spaceMedium),
+          _buildRouteFab(),
+        ],
+      ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _futureOrcamentos,
         builder: (context, snapshot) {

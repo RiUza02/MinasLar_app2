@@ -274,7 +274,10 @@ class _ListaClientePageState extends State<ListaClientePage>
             cliente: cliente,
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => DetalhesClientePage(cliente: cliente),
+                builder: (context) => DetalhesClientePage(
+                  cliente: cliente,
+                  isAdmin: widget.isAdmin,
+                ),
               ),
             ),
           );

@@ -95,9 +95,17 @@ class _ClienteOrcamentosHistoryState extends State<ClienteOrcamentosHistory> {
               itemCount: orcamentos.length,
               itemBuilder: (context, index) {
                 final orcamento = orcamentos[index];
+                final orcamentoParaExibir = Map<String, dynamic>.from(
+                  orcamento,
+                );
+
+                // Remove o valor do orçamento se o usuário não for admin
+                if (!widget.isAdmin) {
+                  orcamentoParaExibir.remove('valor');
+                }
 
                 return OrcamentoHistoryCard(
-                  orcamento: orcamento,
+                  orcamento: orcamentoParaExibir,
                   isLast: index == 0,
                   isHighlight: orcamento['id'] == widget.orcamentoIdDestaque,
                   isAdmin: widget.isAdmin,

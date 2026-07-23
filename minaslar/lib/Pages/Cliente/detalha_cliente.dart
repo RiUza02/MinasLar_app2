@@ -27,7 +27,7 @@ class DetalhesClientePage extends StatefulWidget {
   const DetalhesClientePage({
     super.key,
     required this.cliente,
-    this.isAdmin = true,
+    this.isAdmin = false,
     this.orcamentoIdDestaque,
   });
 

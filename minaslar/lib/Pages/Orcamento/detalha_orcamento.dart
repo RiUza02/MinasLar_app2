@@ -241,18 +241,26 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
               ? AppColors.primaryAlternative
               : AppColors.primary,
           centerTitle: true,
-          actions: [
-            IconButton(
-              icon: const Icon(AppIcons.editar, color: AppColors.textPrimary),
-              onPressed: _isLoading ? null : _editarOrcamento,
-              tooltip: "Editar",
-            ),
-            IconButton(
-              icon: const Icon(AppIcons.excluir, color: AppColors.textPrimary),
-              onPressed: _isLoading ? null : _excluirOrcamento,
-              tooltip: "Excluir",
-            ),
-          ],
+          actions: widget.isAdmin
+              ? [
+                  IconButton(
+                    icon: const Icon(
+                      AppIcons.editar,
+                      color: AppColors.textPrimary,
+                    ),
+                    onPressed: _isLoading ? null : _editarOrcamento,
+                    tooltip: "Editar",
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      AppIcons.excluir,
+                      color: AppColors.textPrimary,
+                    ),
+                    onPressed: _isLoading ? null : _excluirOrcamento,
+                    tooltip: "Excluir",
+                  ),
+                ]
+              : [],
         ),
       ),
       body: _isLoading && _orcamento.id == null
@@ -312,25 +320,26 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
                           ),
                         ),
                         const SizedBox(width: AppDimensions.spaceMedium),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.cardBackground,
-                            borderRadius: BorderRadius.circular(
-                              AppDimensions.radiusLarge,
+                        if (widget.isAdmin)
+                          Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.cardBackground,
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusLarge,
+                              ),
+                              border: Border.all(color: AppColors.borderLight),
                             ),
-                            border: Border.all(color: AppColors.borderLight),
-                          ),
-                          child: IconButton(
-                            icon: const Icon(
-                              AppIcons.atualizar,
-                              color: AppColors.textSecondary,
+                            child: IconButton(
+                              icon: const Icon(
+                                AppIcons.atualizar,
+                                color: AppColors.textSecondary,
+                              ),
+                              tooltip: "Alterar Status (Concluir/Reabrir)",
+                              onPressed: _isLoading
+                                  ? null
+                                  : _alterarStatusEntrega,
                             ),
-                            tooltip: "Alterar Status (Concluir/Reabrir)",
-                            onPressed: _isLoading
-                                ? null
-                                : _alterarStatusEntrega,
                           ),
-                        ),
                       ],
                     ),
                     const SizedBox(height: AppDimensions.spaceLarge),
@@ -440,33 +449,37 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
                     const SizedBox(height: AppDimensions.spaceLarge),
 
                     // [Seção] Resumo Financeiro
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: AppDimensions.spaceLarge,
-                        horizontal: AppDimensions.spaceXLarge,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.cardBackground,
-                        borderRadius: BorderRadius.circular(
-                          AppDimensions.radiusLarge,
+                    if (widget.isAdmin)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppDimensions.spaceLarge,
+                          horizontal: AppDimensions.spaceXLarge,
                         ),
-                        border: Border.all(color: AppColors.borderLight),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text("VALOR TOTAL", style: AppTextStyles.cardHeader),
-                          Text(
-                            valorF,
-                            style: AppTextStyles.titleLarge.copyWith(
-                              color: _orcamento.valor != null
-                                  ? AppColors.success
-                                  : AppColors.textDisabled,
-                            ),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardBackground,
+                          borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusLarge,
                           ),
-                        ],
+                          border: Border.all(color: AppColors.borderLight),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "VALOR TOTAL",
+                              style: AppTextStyles.cardHeader,
+                            ),
+                            Text(
+                              valorF,
+                              style: AppTextStyles.titleLarge.copyWith(
+                                color: _orcamento.valor != null
+                                    ? AppColors.success
+                                    : AppColors.textDisabled,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
                     if (_orcamento.taxaEntrega != null &&
                         _orcamento.taxaEntrega! > 0)
                       Container(
@@ -515,6 +528,7 @@ class _DetalhesOrcamentoState extends State<DetalhesOrcamento> {
                             MaterialPageRoute(
                               builder: (context) => DetalhesClientePage(
                                 cliente: _orcamento.cliente!,
+                                isAdmin: widget.isAdmin,
                               ),
                             ),
                           ),

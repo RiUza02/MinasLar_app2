@@ -85,8 +85,8 @@ class _OverViewState extends State<OverView>
     }
   }
 
-  // **[Subcomponente: FAB]** Constrói o botão flutuante de rota exclusivo para o perfil administrador.
-  Widget _buildAdminFab() {
+  // **[Subcomponente: FAB]** Constrói o botão flutuante para geração de rota.
+  Widget _buildRouteFab() {
     return FloatingActionButton(
       heroTag: "btnRota",
       onPressed: _gerarRota,
@@ -101,7 +101,7 @@ class _OverViewState extends State<OverView>
     super.build(context);
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: widget.isAdmin ? _buildAdminFab() : null,
+      floatingActionButton: _buildRouteFab(),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _futureOrcamentos,
         builder: (context, snapshot) {
